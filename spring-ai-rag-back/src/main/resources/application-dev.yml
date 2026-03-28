@@ -1,0 +1,10 @@
+lss:
+  alioss:
+    endpoint: oss-cn-beijing.aliyuncs.com
+    access-key-id:
+    access-key-secret:
+    bucket-name: lss-rag
+  dashscope:
+    api-key:
+  websearch:
+    api-key:
