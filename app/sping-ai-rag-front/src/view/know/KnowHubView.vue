@@ -183,7 +183,6 @@ const uploadFile = () => {
   isUploading.value = true;
   uploadFileApi(files)
     .then((res) => {
-      debugger;
       let code = res.data.code;
       if (code == 0) {
         ElMessage({

@@ -1,5 +1,7 @@
 package com.lss.springairag.controller;
 
+import com.alibaba.cloud.ai.advisor.RetrievalRerankAdvisor;
+import com.alibaba.cloud.ai.dashscope.rerank.DashScopeRerankModel;
 import com.alibaba.fastjson2.JSON;
 import com.lss.springairag.advisors.MetadataAwareQuestionAnswerAdvisor;
 import com.lss.springairag.annotation.Loggable;
@@ -42,13 +44,16 @@ public class AIRagController {
     @Autowired
     private SensitiveWordService sensitiveWordService;
 
+    @Autowired
+    private DashScopeRerankModel dashScopeRerankModel;
+
     private ChatModel chatModel;
 
     private static final String DEFAULT_SYSTEM_PROMPT = """
-                        你是"帅帅"知识库系统的对话助手，请以乐于助人的方式进行对话，
-                        {rag_message}
-                        今天的日期：{current_data}
-                        """;
+            你是"帅帅"知识库系统的对话助手，请以乐于助人的方式进行对话，
+            {rag_message}
+            今天的日期：{current_data}
+            """;
 
 
     public AIRagController(ChatModel chatModel, ChatMemory chatMemory,
@@ -70,7 +75,7 @@ public class AIRagController {
     }
 
     @Operation(summary = "rag post", description = "Rag对话接口POST版本")
-    @PostMapping(value = "/rag" )
+    @PostMapping(value = "/rag")
     @Loggable
     public Flux<String> generatePost(@RequestParam(value = "sources", required = false) List<String> sources,
                                      @RequestParam(value = "message", defaultValue = "你好") String message) throws IOException {
@@ -78,8 +83,8 @@ public class AIRagController {
         // 敏感词过滤
         List<SensitiveWord> list = sensitiveWordService.list();
 
-        for(SensitiveWord sensitiveWord: list){
-            if (message.contains(sensitiveWord.getWord())){
+        for (SensitiveWord sensitiveWord : list) {
+            if (message.contains(sensitiveWord.getWord())) {
                 return Flux.just("包含敏感词:" + sensitiveWord.getWord());
             }
         }
@@ -116,7 +121,7 @@ public class AIRagController {
                     .query(message)
                     .similarityThreshold(0.1d).topK(5)
                     // source in ['xxx.pdf','xxxx']
-                    .filterExpression("source in "+ JSON.toJSONString(sources));
+                    .filterExpression("source in " + JSON.toJSONString(sources));
 
 
             // 增强QuestionAnswerAdvisor  ：
@@ -148,11 +153,11 @@ public class AIRagController {
             }*/
 
             // 重排序 2次筛选--->只有前面步骤已经优化完毕
-            /*RetrievalRerankAdvisor retrievalRerankAdvisor =
+            RetrievalRerankAdvisor retrievalRerankAdvisor =
                     new RetrievalRerankAdvisor(vectorStore, dashScopeRerankModel
-                            , SearchRequest.builder().topK(200).build());*/
+                            , SearchRequest.builder().topK(200).build());
 
-            clientRequestSpec=clientRequestSpec
+            clientRequestSpec = clientRequestSpec
                     .system(a -> a.param("rag_message", """
                             如果涉及RAG，请提供文件来源，我会提供给你文件来源，
                             请严格基于知识库内容回答用户问题，
@@ -161,7 +166,7 @@ public class AIRagController {
                             """))
                     // filterExpression的param指定方式：
                     //.advisors(advisorSpec -> advisorSpec.param(QuestionAnswerAdvisor.FILTER_EXPRESSION,"source in "+JSON.toJSONString(sources)));
-                    //.advisors(retrievalRerankAdvisor);
+//                    .advisors(retrievalRerankAdvisor)
                     .advisors(QuestionAnswerAdvisor.builder(vectorStore)
                             .searchRequest(searchRequestBuilder.build())
                             .build());
@@ -172,7 +177,7 @@ public class AIRagController {
                 .stream()// 流式方式
                 .content();
 
-        return  content;
+        return content;
     }
 
 
