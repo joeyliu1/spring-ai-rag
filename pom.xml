@@ -3,10 +3,10 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.lss</groupId>
-    <artifactId>spring-ai-lss-rag</artifactId>
+    <artifactId>spring-ai-rag</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>spring-ai-lss-rag</name>
-    <description>spring-ai-lss-rag</description>
+    <name>spring-ai-rag</name>
+    <description>spring-ai-rag</description>
     <packaging>pom</packaging>
 
 

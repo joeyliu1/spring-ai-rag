@@ -3,7 +3,7 @@ server:
 
 spring:
   application:
-    name: spring-ai-lss-rag
+    name: spring-ai-rag
   profiles:
     active: dev
   servlet:

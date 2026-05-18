@@ -4,7 +4,7 @@
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>com.lss</groupId>
-        <artifactId>spring-ai-lss-rag</artifactId>
+        <artifactId>spring-ai-rag</artifactId>
         <version>0.0.1-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath> <!-- lookup parent from repository -->
     </parent>
@@ -12,7 +12,7 @@
     <artifactId>spring-ai-rag-back</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <name>spring-ai-rag-back</name>
-    <description>spring-ai-lss-rag</description>
+    <description>spring-ai-rag</description>
 
 
     <properties>
