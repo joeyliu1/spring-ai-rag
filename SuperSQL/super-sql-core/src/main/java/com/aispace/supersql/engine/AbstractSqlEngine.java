@@ -41,9 +41,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-/**
- * @author chengjie.guo
- */
 @Slf4j
 public abstract class AbstractSqlEngine implements SqlEngine {
 

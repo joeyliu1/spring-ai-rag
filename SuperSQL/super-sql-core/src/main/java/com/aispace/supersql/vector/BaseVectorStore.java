@@ -9,7 +9,6 @@ import java.util.Optional;
 
 /**
  * 向量数据库交互操作
- * @author chengjie.guo
  */
 public interface BaseVectorStore {
 

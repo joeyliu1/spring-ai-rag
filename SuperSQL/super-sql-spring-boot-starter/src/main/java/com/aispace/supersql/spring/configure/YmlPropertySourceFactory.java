@@ -9,9 +9,6 @@ import org.springframework.core.io.support.EncodedResource;
 
 import java.io.IOException;
 
-/**
- * @author chengjie.guo
- */
 public class YmlPropertySourceFactory extends DefaultPropertySourceFactory {
 
     @Override

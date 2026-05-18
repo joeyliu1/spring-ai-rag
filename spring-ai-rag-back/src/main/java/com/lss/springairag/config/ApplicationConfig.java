@@ -10,10 +10,6 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
-/**
- * @author xushu
- * @date 2025/2/8
- */
 
 @Configuration
 public class ApplicationConfig implements WebMvcConfigurer {

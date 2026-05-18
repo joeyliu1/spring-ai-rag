@@ -4,9 +4,6 @@ import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.util.Assert;
 
-/**
- * @author chengjie.guo
- */
 public class ChatClientFactory {
 
 

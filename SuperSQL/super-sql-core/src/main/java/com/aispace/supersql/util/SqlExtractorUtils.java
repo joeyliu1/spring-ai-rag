@@ -8,7 +8,6 @@ import java.util.regex.Pattern;
 
 /**
  * The SqlExtractorUtils class provides methods for extracting SQL statements from a given response string.
- * @author chengjie.guo
  * @since 2025/01/07
  */
 @Slf4j

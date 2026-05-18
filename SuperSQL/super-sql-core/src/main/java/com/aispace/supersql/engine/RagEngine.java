@@ -2,9 +2,6 @@ package com.aispace.supersql.engine;
 
 import java.io.File;
 
-/**
- * @author chengjie.guo
- */
 public interface RagEngine {
 
 

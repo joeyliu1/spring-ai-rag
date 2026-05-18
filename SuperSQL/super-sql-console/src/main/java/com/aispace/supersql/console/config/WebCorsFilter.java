@@ -10,8 +10,7 @@ import java.io.IOException;
 /**
  * 拦截器解决跨域问题
  *
- * @author chengjie.x.guo
- * @email chengjie.x.guo@gsk.com
+ * @author lss
  */
 @Component
 public class WebCorsFilter implements Filter {

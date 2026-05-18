@@ -32,9 +32,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-/**
- * @author chengjie.guo
- */
 @Slf4j
 @AutoConfiguration
 @Import(SuperSqlMybatisPlusConfiguration.class)

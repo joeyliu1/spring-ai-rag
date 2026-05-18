@@ -9,9 +9,6 @@ import org.springframework.ai.vectorstore.filter.Filter.Expression;
 import java.util.List;
 import java.util.Optional;
 
-/**
- * @author chengjie.guo
- */
 @AllArgsConstructor
 public class  SpringVectorStore implements BaseVectorStore{
 

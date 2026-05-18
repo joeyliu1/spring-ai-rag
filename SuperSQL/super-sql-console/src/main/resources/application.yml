@@ -7,13 +7,13 @@ spring:
     name: super-sql-demo
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://localhost:3306/xushu_rag?characterEncoding=utf8&useSSL=false
+    url: jdbc:mysql://localhost:3306/lss_rag?characterEncoding=utf8&useSSL=false
     username: root
     password: 123456
 
   ai:
     dashscope:
-      api-key: ${ALI_AI_KEY}
+      api-key: ${AI_DASHSCOPE_API_KEY}
 
     #  当使用 Ollama时，请配置以下参数
     #    ollama:
@@ -58,4 +58,4 @@ super-sql:
   init-train: true
   scope: ALONE  # ALL 整库训练, ALONE 单库训练
   schemas:
-    - schema: xushu_rag  # 指定数据库
+    - schema: lss_rag  # 指定数据库

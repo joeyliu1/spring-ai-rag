@@ -14,9 +14,6 @@ import java.io.File;
 import java.util.List;
 import java.util.Map;
 
-/**
- * @author chengjie.guo
- */
 @Slf4j
 public class SpringRagEngine implements RagEngine {
 

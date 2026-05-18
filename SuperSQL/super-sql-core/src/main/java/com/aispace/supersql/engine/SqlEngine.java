@@ -7,9 +7,6 @@ import reactor.core.publisher.Flux;
 
 import java.util.List;
 
-/**
- * @author chengjie.guo
- */
 public interface SqlEngine {
 
     /**
