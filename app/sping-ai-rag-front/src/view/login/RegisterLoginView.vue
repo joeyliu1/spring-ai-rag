@@ -15,27 +15,29 @@
         <p class="form-subtitle">登录到 LSS-RAG-AI 系统</p>
       </div>
 
-      <el-form-item label="用户名" prop="userName" :rules="[{ required: true, message: '请输入用户名', trigger: 'blur' }]">
+      <el-form-item label="用户名" prop="userName" :rules="[{ required: true, message: '请输入用户名', trigger: 'blur' }]" label-width="70px">
         <el-input v-model="loginForm.userName" placeholder="请输入用户名" size="large">
           <template #prefix>
-            <el-icon><User /></el-icon>
+            <el-icon style="width: 20px;"><User /></el-icon>
           </template>
         </el-input>
       </el-form-item>
-      <el-form-item label="密码" prop="password" :rules="[{ required: true, message: '请输入密码', trigger: 'blur' }]">
+      <el-form-item label="密码" prop="password" :rules="[{ required: true, message: '请输入密码', trigger: 'blur' }]" label-width="70px">
         <el-input v-model="loginForm.password" type="password" placeholder="请输入密码" size="large" show-password>
           <template #prefix>
-            <el-icon><Lock /></el-icon>
+            <el-icon style="width: 20px;"><Lock /></el-icon>
           </template>
         </el-input>
       </el-form-item>
-      <el-form-item>
-        <el-button type="primary" class="login-btn" @click="handleLogin" size="large" :loading="isLoading">
-          登录
-        </el-button>
-        <el-button class="register-btn" @click="showRegisterDialog" size="large">
-          注册账号
-        </el-button>
+      <el-form-item label-width="0">
+        <div class="btn-group">
+          <el-button type="primary" class="login-btn" @click="handleLogin" :loading="isLoading">
+            登录
+          </el-button>
+          <el-button class="register-btn" @click="showRegisterDialog">
+            注册账号
+          </el-button>
+        </div>
       </el-form-item>
     </el-form>
 
@@ -566,8 +568,8 @@ onMounted(() => {
 }
 
 .login-form {
-  width: 420px;
-  padding: 40px;
+  width: 360px;
+  padding: 32px;
   background: rgba(255, 255, 255, 0.9);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
@@ -577,6 +579,24 @@ onMounted(() => {
   position: relative;
   z-index: 1;
   animation: slideUp 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+  margin-left: -60px;
+
+  :deep(.el-form-item) {
+    margin-bottom: 18px;
+  }
+
+  :deep(.el-form-item__label) {
+    text-align: justify;
+    padding-right: 12px;
+  }
+
+  :deep(.el-input__prefix) {
+    padding-left: 8px;
+  }
+
+  :deep(.el-form-item:last-child) {
+    margin-bottom: 0;
+  }
 }
 
 @keyframes slideUp {
@@ -592,34 +612,42 @@ onMounted(() => {
 
 .form-header {
   text-align: center;
-  margin-bottom: 30px;
+  margin-bottom: 24px;
 }
 
 .form-title {
-  font-size: 28px;
+  font-size: 24px;
   font-weight: 600;
   background: linear-gradient(135deg, var(--apple-blue) 0%, var(--apple-purple) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 
 .form-subtitle {
   color: var(--apple-text-secondary);
-  font-size: 14px;
+  font-size: 13px;
+}
+
+.btn-group {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  width: 100%;
 }
 
 .login-btn {
-  width: 100%;
-  height: 48px;
-  font-size: 16px;
+  min-width: 120px;
+  height: 40px;
+  font-size: 15px;
   font-weight: 600;
   background: linear-gradient(135deg, var(--apple-blue) 0%, var(--apple-indigo) 100%) !important;
   border: none !important;
   border-radius: var(--radius-md) !important;
   box-shadow: 0 4px 16px rgba(0, 122, 255, 0.3) !important;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  padding: 0 28px !important;
 
   &:hover {
     transform: translateY(-2px);
@@ -628,13 +656,14 @@ onMounted(() => {
 }
 
 .register-btn {
-  width: 100%;
-  height: 48px;
-  font-size: 16px;
+  min-width: 120px;
+  height: 40px;
+  font-size: 15px;
   font-weight: 500;
   border-radius: var(--radius-md) !important;
   border: 1px solid var(--apple-border) !important;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  padding: 0 28px !important;
 
   &:hover {
     border-color: var(--apple-blue) !important;
