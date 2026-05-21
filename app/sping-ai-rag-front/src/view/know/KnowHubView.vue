@@ -1,122 +1,143 @@
 <template>
-  <el-upload
-    class="upload-demo"
-    drag
-    multiple
-    v-model:file-list="fileList"
-    :auto-upload="false"
-    v-loading="isUploading"
-  >
-    <el-icon class="el-icon--upload"><upload-filled /></el-icon>
-    <div class="el-upload__text">
-      拖拽文件至此或<em>点击选择文件</em>进行上传
-    </div>
-    <template #tip>
-      <div style="text-align: center">
-        <el-text
-          >文件支持 <i>pdf、doc、md、excel、text</i>等，最大可上传<em
-            style="color: blue"
-            >100MB</em
-          ></el-text
-        >
-      </div>
-    </template>
-  </el-upload>
-
-  <el-form
-    style="display: flex; justify-content: space-between; align-items: center; margin: 20px 0"
-    :model="queryFileDto"
-  >
-    <div style="display: flex; gap: 10px; align-items: center">
-      <el-button
-        type="danger"
-        @click="batchDelete"
-        :disabled="selectedFiles.length === 0"
+  <div class="know-hub-container">
+    <!-- Upload Area -->
+    <div class="upload-section">
+      <el-upload
+        class="upload-demo"
+        drag
+        multiple
+        v-model:file-list="fileList"
+        :auto-upload="false"
+        v-loading="isUploading"
       >
-        批量删除
-      </el-button>
-      <el-button
-        type="primary"
-        @click="batchDownload"
-        :disabled="selectedFiles.length === 0"
-      >
-        批量下载
-      </el-button>
-      <el-form-item label="文件名:" style="margin-bottom: 0">
-        <el-input placeholder="请输入文件名称" v-model="queryFileDto.fileName" />
-      </el-form-item>
-      <el-form-item style="margin-bottom: 0">
-        <el-button type="primary" @click="loadStoreFileData" :disabled="isLoading"
-          >搜索</el-button
-        >
-      </el-form-item>
+        <div class="upload-content">
+          <el-icon class="upload-icon"><upload-filled /></el-icon>
+          <div class="upload-text">
+            拖拽文件至此或<em>点击选择文件</em>进行上传
+          </div>
+        </div>
+        <template #tip>
+          <div class="upload-tip">
+            <el-text>文件支持 <i>pdf、doc、md、excel、text</i> 等，最大可上传 <em style="color: var(--apple-blue)">100MB</em></el-text>
+          </div>
+        </template>
+      </el-upload>
     </div>
-    <el-button
-      type="warning"
-      @click="uploadFile"
-      :disabled="isUploading"
-    >
-      全部上传
-    </el-button>
-  </el-form>
 
-  <el-table 
-    :data="storeFileData" 
-    border 
-    v-loading="isLoading"
-    height="calc(100vh - 400px)"
-    @selection-change="handleSelectionChange"
-  >
-    <el-table-column type="selection" width="55" />
-    <el-table-column label="序号" width="80">
-      <template #default="scope">
-        {{ (queryFileDto.page - 1) * queryFileDto.pageSize + scope.$index + 1 }}
-      </template>
-    </el-table-column>
-    <el-table-column prop="fileName" label="文件名" width="580" />
-    <el-table-column label="上传时间">
-      <template #default="scope">
-        {{ format(new Date(scope.row.createTime), "yyyy-MM-dd HH:mm") }}
-      </template>
-    </el-table-column>
-    <el-table-column label="更新时间">
-      <template #default="scope">
-        {{ format(new Date(scope.row.updateTime), "yyyy-MM-dd HH:mm") }}
-      </template>
-    </el-table-column>
-    <el-table-column label="操作" width="150" fixed="right">
-      <template #default="scope">
+    <!-- Toolbar -->
+    <div class="toolbar">
+      <div class="toolbar-left">
         <el-button
-          @click="deleteStoreFile(scope.row)"
           type="danger"
-          size="small"
-          >删除</el-button
+          @click="batchDelete"
+          :disabled="selectedFiles.length === 0"
         >
+          <el-icon><Delete /></el-icon>
+          批量删除
+        </el-button>
         <el-button
-          @click="openFilePreview(scope.row)"
           type="primary"
-          size="small"
-          >下载</el-button
+          @click="batchDownload"
+          :disabled="selectedFiles.length === 0"
         >
-      </template>
-    </el-table-column>
-  </el-table>
+          <el-icon><Download /></el-icon>
+          批量下载
+        </el-button>
+        <div class="search-box">
+          <el-input
+            placeholder="搜索文件名..."
+            v-model="queryFileDto.fileName"
+            clearable
+            style="width: 200px"
+          />
+          <el-button type="primary" @click="loadStoreFileData" :disabled="isLoading">
+            <el-icon><Search /></el-icon>
+            搜索
+          </el-button>
+        </div>
+      </div>
+      <el-button
+        type="warning"
+        @click="uploadFile"
+        :disabled="isUploading"
+        class="upload-btn"
+      >
+        <el-icon><Upload /></el-icon>
+        全部上传
+      </el-button>
+    </div>
 
-  <div style="margin-top: 20px; display: flex; justify-content: center;">
-    <el-pagination
-      v-model:current-page="queryFileDto.page"
-      v-model:page-size="queryFileDto.pageSize"
-      :page-sizes="[10, 20, 50, 100]"
-      :total="storeFileTotal"
-      @size-change="handleSizeChange"
-      @current-change="handleCurrentChange"
-      layout="total, sizes, prev, pager, next, jumper"
-    />
+    <!-- Table -->
+    <div class="table-section">
+      <el-table
+        :data="storeFileData"
+        border
+        v-loading="isLoading"
+        height="calc(100vh - 400px)"
+        @selection-change="handleSelectionChange"
+        class="apple-table"
+      >
+        <el-table-column type="selection" width="50" />
+        <el-table-column label="序号" width="80">
+          <template #default="scope">
+            {{ (queryFileDto.page - 1) * queryFileDto.pageSize + scope.$index + 1 }}
+          </template>
+        </el-table-column>
+        <el-table-column prop="fileName" label="文件名" min-width="400" show-overflow-tooltip />
+        <el-table-column label="上传时间" width="180">
+          <template #default="scope">
+            {{ format(new Date(scope.row.createTime), "yyyy-MM-dd HH:mm") }}
+          </template>
+        </el-table-column>
+        <el-table-column label="更新时间" width="180">
+          <template #default="scope">
+            {{ format(new Date(scope.row.updateTime), "yyyy-MM-dd HH:mm") }}
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="150" fixed="right">
+          <template #default="scope">
+            <el-button
+              @click="deleteStoreFile(scope.row)"
+              type="danger"
+              size="small"
+              text
+            >
+              <el-icon><Delete /></el-icon>
+              删除
+            </el-button>
+            <el-button
+              @click="openFilePreview(scope.row)"
+              type="primary"
+              size="small"
+              text
+            >
+              <el-icon><Download /></el-icon>
+              下载
+            </el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+    </div>
+
+    <!-- Pagination -->
+    <div class="pagination-section">
+      <el-pagination
+        v-model:current-page="queryFileDto.page"
+        v-model:page-size="queryFileDto.pageSize"
+        :page-sizes="[10, 20, 50, 100]"
+        :total="storeFileTotal"
+        @size-change="handleSizeChange"
+        @current-change="handleCurrentChange"
+        layout="total, sizes, prev, pager, next, jumper"
+        background
+      />
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { type UploadUserFile, ElMessage, ElMessageBox } from "element-plus";
+import { UploadFilled, Delete, Download, Upload, Search } from '@element-plus/icons-vue'
 import {uploadFileApi, queryFileApi, deleteFileApi, downloadFileApi} from "@/api/KnowHubApi";
 import { StoreFile } from "@/api/data";
 import { QueryFileDto } from "@/api/dto";
@@ -168,8 +189,7 @@ const uploadFile = () => {
     files.push(e.raw as File);
   });
 
-  // 修改文件大小限制为100MB
-  const maxSize = 100 * 1024 * 1024; // 100MB
+  const maxSize = 100 * 1024 * 1024;
   for (const file of files) {
     if (file.size > maxSize) {
       ElMessage({
@@ -209,6 +229,7 @@ const uploadFile = () => {
       isUploading.value = false;
     });
 };
+
 const deleteStoreFile = (e: any) => {
   ElMessageBox.confirm("确定要删除这个知识库吗？", "警告", {
     confirmButtonText: "确定",
@@ -287,7 +308,7 @@ const handleSelectionChange = (selection: any[]) => {
 
 const batchDelete = () => {
   if (selectedFiles.value.length === 0) return
-  
+
   ElMessageBox.confirm("确定要删除选中的文件吗？", "警告", {
     confirmButtonText: "确定",
     cancelButtonText: "取消",
@@ -322,6 +343,7 @@ const batchDelete = () => {
     })
     .catch(() => {});
 }
+
 const batchDownload = () => {
   if (selectedFiles.value.length === 0) return
 
@@ -357,29 +379,190 @@ onMounted(() => {
 });
 </script>
 
-<style scoped>
+<style scoped lang="less">
+.know-hub-container {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.upload-section {
+  :deep(.el-upload) {
+    width: 100%;
+  }
+
+  :deep(.el-upload-dragger) {
+    width: 100%;
+    height: auto;
+    min-height: 140px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-lg);
+    border: 2px dashed var(--apple-border);
+    background: rgba(255, 255, 255, 0.5);
+    backdrop-filter: blur(10px);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+    &:hover {
+      border-color: var(--apple-blue);
+      background: rgba(0, 122, 255, 0.03);
+    }
+  }
+
+  .upload-content {
+    padding: 20px;
+    text-align: center;
+  }
+
+  .upload-icon {
+    font-size: 48px;
+    color: var(--apple-blue);
+    margin-bottom: 12px;
+  }
+
+  .upload-text {
+    color: var(--apple-text-secondary);
+    font-size: 14px;
+
+    em {
+      color: var(--apple-blue);
+      font-style: normal;
+      font-weight: 500;
+    }
+  }
+
+  .upload-tip {
+    margin-top: 12px;
+    color: var(--apple-text-secondary);
+    font-size: 13px;
+
+    i {
+      font-style: normal;
+      color: var(--apple-text-primary);
+    }
+  }
+}
+
+.toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  background: var(--apple-card);
+  backdrop-filter: blur(20px);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--apple-border);
+  box-shadow: var(--shadow-sm);
+
+  .toolbar-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .search-box {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-left: 12px;
+  }
+
+  .upload-btn {
+    background: linear-gradient(135deg, var(--apple-orange) 0%, #FFCC00 100%) !important;
+    border: none !important;
+    box-shadow: 0 4px 12px rgba(255, 149, 0, 0.25) !important;
+
+    &:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 16px rgba(255, 149, 0, 0.35) !important;
+    }
+  }
+}
+
+.table-section {
+  flex: 1;
+  background: var(--apple-card);
+  backdrop-filter: blur(20px);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--apple-border);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+
+  :deep(.el-table) {
+    --el-table-border-color: var(--apple-border);
+    --el-table-header-bg-color: rgba(0, 122, 255, 0.04);
+    border-radius: var(--radius-lg);
+  }
+
+  :deep(.el-table__header th) {
+    background: linear-gradient(135deg, rgba(0, 122, 255, 0.06) 0%, rgba(175, 82, 222, 0.06) 100%) !important;
+    color: var(--apple-text-primary);
+    font-weight: 600;
+    padding: 14px 12px;
+  }
+
+  :deep(.el-table__row) {
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+
+    &:hover > td {
+      background-color: rgba(0, 122, 255, 0.03) !important;
+    }
+  }
+
+  :deep(.el-table__cell) {
+    padding: 12px;
+  }
+
+  :deep(.el-checkbox__input.is-checked .el-checkbox__inner) {
+    background: linear-gradient(135deg, var(--apple-blue) 0%, var(--apple-indigo) 100%);
+    border-color: var(--apple-blue);
+  }
+}
+
+.pagination-section {
+  display: flex;
+  justify-content: center;
+  padding: 16px 0;
+
+  :deep(.el-pagination) {
+    --el-pagination-button-bg-color: var(--apple-card);
+    --el-pagination-button-color: var(--apple-text-primary);
+    --el-pagination-hover-color: var(--apple-blue);
+
+    .el-pager li {
+      border-radius: var(--radius-sm);
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+
+      &:hover {
+        background-color: rgba(0, 122, 255, 0.08);
+      }
+
+      &.is-active {
+        background: linear-gradient(135deg, var(--apple-blue) 0%, var(--apple-indigo) 100%) !important;
+        color: #fff !important;
+        box-shadow: 0 2px 8px rgba(0, 122, 255, 0.3);
+      }
+    }
+
+    .el-pagination__total {
+      color: var(--apple-text-secondary);
+    }
+  }
+}
+
 .el-table {
   ::-webkit-scrollbar {
     width: 6px;
     height: 6px;
   }
   ::-webkit-scrollbar-thumb {
-    background: #ddd;
+    background: rgba(0, 0, 0, 0.15);
     border-radius: 3px;
   }
   ::-webkit-scrollbar-track {
-    background: #f5f5f5;
+    background: transparent;
   }
-}
-
-.upload-demo {
-  margin-bottom: 20px;
-}
-
-.el-form {
-  background-color: #fff;
-  padding: 15px;
-  border-radius: 4px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 </style>

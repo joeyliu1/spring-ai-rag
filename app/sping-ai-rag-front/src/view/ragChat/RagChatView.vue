@@ -1,13 +1,27 @@
 <template>
   <div class="chat-container">
     <el-card class="box-card">
+      <template #header>
+        <div class="card-header">
+          <span class="title">AI 智能问答</span>
+        </div>
+      </template>
+
       <div class="chat-messages" ref="messageContainer">
-        <div v-for="(message, index) in messages" :key="index" 
+        <div v-for="(message, index) in messages" :key="index"
              :class="['message', message.role === 'user' ? 'user-message' : 'assistant-message']">
           <div class="message-wrapper">
+            <div class="message-avatar">
+              <div v-if="message.role === 'user'" class="avatar user-avatar">
+                <el-icon><User /></el-icon>
+              </div>
+              <div v-else class="avatar assistant-avatar">
+                <el-icon><MagicStick /></el-icon>
+              </div>
+            </div>
             <div class="message-content" :class="{ 'typing': message.isTyping }" v-html="renderMarkdown(message.content)">
             </div>
-            
+
             <el-button
               class="copy-button"
               type="text"
@@ -20,17 +34,7 @@
         </div>
       </div>
 
-      <div class="input-container">
-        <el-input
-          v-model="userInput"
-          type="textarea"
-          :rows="3"
-          placeholder="请输入您的问题..."
-          @keyup.enter="handleRagSend"
-        />
-      </div>
-
-      <div class="button-group">
+      <div class="input-area">
         <div class="file-selection-inline">
           <span class="file-selection-label">选择知识库文件：</span>
           <el-select
@@ -40,7 +44,7 @@
             collapse-tags-tooltip
             placeholder="选择文件"
             style="width: 200px; margin-right: 10px;"
-            size="small"
+            size="default"
             @change="handleFileSelectionChange"
           >
             <el-option
@@ -53,14 +57,14 @@
           <el-popover
             v-if="selectedFiles.length > 0"
             trigger="hover"
-            placement="bottom"
+            placement="top"
             :width="300"
           >
             <template #reference>
               <el-tag
                 type="info"
                 size="small"
-                style="margin-right: 10px; cursor: pointer;"
+                style="cursor: pointer; border-radius: 20px;"
               >
                 已选{{ selectedFiles.length }}个
               </el-tag>
@@ -80,8 +84,24 @@
             </div>
           </el-popover>
         </div>
-        <el-button type="primary" @click="handleRagSend" :loading="isLoading">RAG回答</el-button>
-        <el-button type="warning" @click="clearMessages">清空对话</el-button>
+
+        <div class="input-container">
+          <el-input
+            v-model="userInput"
+            type="textarea"
+            :rows="3"
+            placeholder="请输入您的问题，按 Enter 发送..."
+            @keyup.enter="handleRagSend"
+            resize="none"
+          />
+          <div class="button-group">
+            <el-button type="primary" class="send-btn" @click="handleRagSend" :loading="isLoading">
+              <el-icon v-if="!isLoading"><Position /></el-icon>
+              <span>{{ isLoading ? '思考中...' : '发送' }}</span>
+            </el-button>
+            <el-button @click="clearMessages">清空对话</el-button>
+          </div>
+        </div>
       </div>
     </el-card>
   </div>
@@ -90,13 +110,13 @@
 <script setup lang="ts">
 import { ref, onMounted, nextTick } from 'vue'
 import { marked } from 'marked'
-import { Document } from '@element-plus/icons-vue'
+import { Document, User, MagicStick, Position } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { ChatApi, type ChatMessage } from '@/api/ChatApi'
 import { getStreamChat } from '@/api/StreamApi'
 import { queryFileApi } from '@/api/KnowHubApi'
 import { StoreFile } from '@/api/data'
- 
+
 
 const messages = ref<ChatMessage[]>([])
 const userInput = ref('')
@@ -107,12 +127,12 @@ const selectedFiles = ref<string[]>([])
 
 // 加载知识库文件列表
 const loadKnowledgeFiles = () => {
-  const params = { 
-    page: 0, 
-    pageSize: 100, // 假设一页最多加载100个文件
-    fileName: "" 
+  const params = {
+    page: 0,
+    pageSize: 100,
+    fileName: ""
   }
-  
+
   queryFileApi(params)
     .then((res) => {
       if (res.code == 0) {
@@ -158,72 +178,57 @@ const sendMessage = async (url: string, selectedFileIds: string[] = []) => {
 
   messages.value.push({
     role: 'assistant',
-    content: '正在思考中...', // 建议初始设为空字符串或思考中，看你需求
+    content: '正在思考中...',
     isTyping: true
   })
-   // 2. 关键步骤：从 messages.value 数组中获取刚才 push 进去的【响应式对象】
-   // 这样修改它时，Vue 才能监听到
+
   const lastIndex = messages.value.length - 1
   const reactiveMessage = messages.value[lastIndex]
-  // --- 修改结束 ---
 
-  // 如果初始内容是"正在思考中..."，在收到第一个字符时可能需要清空它，或者保留它
-  // 这里假设你想保留"正在思考中..."直到流开始，或者直接覆盖，下面逻辑稍微调整一下:
-  // 建议：初始 content 设为 ''，或者在收到第一个包时清空 '正在思考中...'
   let isFirstChunk = true;
- 
-  // 获取选中的文件名
+
   const fileSources = selectedFileIds.map(id => {
     const file = knowledgeFiles.value.find(f => f.id === id)
     return file ? file.fileName : ''
   }).filter(name => name !== '')
-  
-  // 使用更新后的getStreamChat函数，它始终使用POST请求
+
   if (fileSources.length > 0) {
-    // 有文件选择时，传递sources参数
     getStreamChat(currentInput, url, (value) => {
       const text = value.data;
-      
-      // 如果是第一包数据，且当前内容是占位符，先清空
+
       if (isFirstChunk && reactiveMessage.content === '正在思考中...') {
         reactiveMessage.content = '';
         isFirstChunk = false;
       }
 
-      // 3. 修改响应式对象
-      reactiveMessage.content += text 
-      
-      // 滚动到底部
+      reactiveMessage.content += text
+
       scrollToBottom()
 
     }, (error) => {
       window.console.error('Error:', error)
       reactiveMessage.content = '抱歉，发生了错误，请稍后重试。'
-    }, () => { 
+    }, () => {
       isLoading.value = false
       reactiveMessage.isTyping = false
     }, fileSources)
   } else {
-    // 无文件选择时，不传递sources参数
     getStreamChat(currentInput, url, (value) => {
       const text = value.data;
-      
-      // 如果是第一包数据，且当前内容是占位符，先清空
+
       if (isFirstChunk && reactiveMessage.content === '正在思考中...') {
         reactiveMessage.content = '';
         isFirstChunk = false;
       }
 
-      // 3. 修改响应式对象
-      reactiveMessage.content += text 
-      
-      // 滚动到底部
+      reactiveMessage.content += text
+
       scrollToBottom()
 
     }, (error) => {
       window.console.error('Error:', error)
       reactiveMessage.content = '抱歉，发生了错误，请稍后重试。'
-    }, () => { 
+    }, () => {
       isLoading.value = false
       reactiveMessage.isTyping = false
     })
@@ -233,16 +238,14 @@ const sendMessage = async (url: string, selectedFileIds: string[] = []) => {
 // 滚动到底部
 const scrollToBottom = () => {
   if (!messageContainer.value) return
-  
+
   const container = messageContainer.value
-  
-  // 1. 立即尝试滚动（应对普通更新）
+
   container.scrollTop = container.scrollHeight
-  
-  // 2. 延迟再次滚动（应对流式输出中的浏览器重绘延迟）
+
   setTimeout(() => {
     container.scrollTop = container.scrollHeight
-  }, 100) // 100ms 的延迟通常能解决渲染滞后问题
+  }, 100)
 }
 
 // 复制消息
@@ -317,79 +320,69 @@ onMounted(() => {
     role: 'assistant',
     content: '你好！我是AI助手，请问有什么可以帮助你的吗？'
   })
-  
-  // 加载知识库文件列表
+
   loadKnowledgeFiles()
 })
 </script>
 
 <style scoped lang="less">
 .chat-container {
-  height: 100vh;
-  padding: 20px;
-  box-sizing: border-box;
-  overflow: hidden;
+  height: 100%;
+  padding: 0;
 
   .box-card {
     height: 100%;
     display: flex;
     flex-direction: column;
-    
+    border-radius: var(--radius-lg);
+    border: none;
+    box-shadow: var(--shadow-md);
+    background: var(--apple-card);
+    backdrop-filter: blur(20px);
+
+    :deep(.el-card__header) {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--apple-border);
+      background: linear-gradient(135deg, rgba(0, 122, 255, 0.03) 0%, rgba(175, 82, 222, 0.03) 100%);
+    }
+
     :deep(.el-card__body) {
       flex: 1;
       display: flex;
       flex-direction: column;
-      padding: 20px;
+      padding: 0;
       overflow: hidden;
     }
   }
 }
 
-.file-selection-container {
-  margin-bottom: 15px;
-  padding: 10px;
-  background-color: #f8f9fa;
-  border: 1px solid #ebeef5;
-  border-radius: 4px;
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 
-  .file-selection-header {
-    margin-bottom: 10px;
-
-    .file-selection-label {
-      display: block;
-      margin-bottom: 5px;
-      font-weight: bold;
-      color: #606266;
-    }
-  }
-
-  .selected-files-info {
-    margin-top: 10px;
-    padding: 10px;
-    background-color: #e6f7ff;
-    border: 1px solid #91d5ff;
-    border-radius: 4px;
-
-    span {
-      display: block;
-      margin-bottom: 8px;
-      font-weight: 500;
-      color: #1890ff;
-    }
+  .title {
+    font-size: 18px;
+    font-weight: 600;
+    background: linear-gradient(135deg, var(--apple-blue) 0%, var(--apple-purple) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
   }
 }
 
 .file-selection-inline {
   display: flex;
   align-items: center;
-  padding: 5px;
-  flex-wrap: nowrap;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--apple-border);
+  background: rgba(0, 0, 0, 0.02);
 }
 
 .file-selection-inline .file-selection-label {
   margin-right: 10px;
   font-weight: 500;
-  color: #606266;
+  color: var(--apple-text-primary);
   font-size: 14px;
 }
 
@@ -401,10 +394,7 @@ onMounted(() => {
 .chat-messages {
   flex: 1;
   overflow-y: auto;
-  margin-bottom: 15px;
-  padding: 10px;
-  border: 1px solid #ebeef5;
-  border-radius: 4px;
+  padding: 20px;
   min-height: 0;
 
   &::-webkit-scrollbar {
@@ -412,18 +402,19 @@ onMounted(() => {
   }
 
   &::-webkit-scrollbar-thumb {
-    background-color: #909399;
+    background-color: rgba(0, 0, 0, 0.15);
     border-radius: 3px;
   }
 
   &::-webkit-scrollbar-track {
-    background-color: #f0f2f5;
+    background-color: transparent;
   }
 }
 
 .message {
-  margin-bottom: 15px;
-  max-width: 80%;
+  margin-bottom: 20px;
+  max-width: 85%;
+  animation: messageSlideIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
 
   &.user-message {
     margin-left: auto;
@@ -435,49 +426,99 @@ onMounted(() => {
     }
 
     .message-content {
-      background-color: #007AFF;
+      background: linear-gradient(135deg, var(--apple-blue) 0%, var(--apple-indigo) 100%);
       color: white;
+      border-bottom-right-radius: 6px;
+    }
+
+    .copy-button {
+      margin-left: 8px;
     }
   }
 
   &.assistant-message {
     margin-right: auto;
     text-align: left;
+
+    .message-content {
+      background: rgba(255, 255, 255, 0.9);
+      backdrop-filter: blur(10px);
+      border: 1px solid var(--apple-border);
+      color: var(--apple-text-primary);
+      border-bottom-left-radius: 6px;
+    }
+  }
+}
+
+@keyframes messageSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
   }
 }
 
 .message-wrapper {
   display: flex;
   align-items: flex-start;
-  gap: 8px;
+  gap: 10px;
+}
+
+.message-avatar {
+  flex-shrink: 0;
+
+  .avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+  }
+
+  .user-avatar {
+    background: linear-gradient(135deg, var(--apple-blue) 0%, var(--apple-indigo) 100%);
+    color: white;
+  }
+
+  .assistant-avatar {
+    background: linear-gradient(135deg, var(--apple-purple) 0%, var(--apple-indigo) 100%);
+    color: white;
+  }
 }
 
 .message-content {
   display: inline-block;
-  padding: 10px 15px;
-  border-radius: 10px;
-  background-color: #f0f0f0;
+  padding: 12px 16px;
+  border-radius: 18px;
   word-break: break-word;
   font-size: 14px;
+  line-height: 1.6;
+  box-shadow: var(--shadow-sm);
 
   :deep(p) {
     margin: 0;
-    line-height: 1.5;
+    line-height: 1.6;
   }
 
   :deep(pre) {
-    background-color: #f8f8f8;
-    padding: 10px;
-    border-radius: 4px;
+    background-color: rgba(0, 0, 0, 0.05);
+    padding: 12px;
+    border-radius: var(--radius-sm);
     overflow-x: auto;
     font-size: 13px;
+    margin: 8px 0;
   }
 
   :deep(code) {
-    font-family: Consolas, Monaco, 'Andale Mono', monospace;
-    background-color: #f8f8f8;
-    padding: 2px 4px;
-    border-radius: 3px;
+    font-family: 'SF Mono', Consolas, Monaco, 'Andale Mono', monospace;
+    background-color: rgba(0, 0, 0, 0.05);
+    padding: 2px 6px;
+    border-radius: 4px;
     font-size: 13px;
   }
 
@@ -488,9 +529,9 @@ onMounted(() => {
 
   :deep(blockquote) {
     margin: 8px 0;
-    padding-left: 10px;
-    border-left: 4px solid #ddd;
-    color: #666;
+    padding-left: 12px;
+    border-left: 3px solid var(--apple-blue);
+    color: var(--apple-text-secondary);
   }
 
   &.typing {
@@ -513,40 +554,57 @@ onMounted(() => {
   transition: opacity 0.3s;
   padding: 4px;
   height: auto;
+  color: var(--apple-text-secondary);
+  margin-right: 8px;
 
   &:hover {
     opacity: 1;
+    color: var(--apple-blue);
   }
 }
 
+.input-area {
+  border-top: 1px solid var(--apple-border);
+  background: rgba(255, 255, 255, 0.5);
+}
+
 .input-container {
-  margin-top: auto;
   display: flex;
-  gap: 10px;
-  padding: 10px;
-  background-color: #fff;
-  border: 1px solid #ebeef5;
-  border-radius: 4px;
-  min-height: 100px;
+  gap: 12px;
+  padding: 16px 20px;
+  align-items: flex-end;
 
   .el-textarea {
     flex: 1;
+
+    :deep(.el-textarea__inner) {
+      border-radius: var(--radius-md);
+      padding: 12px 16px;
+      font-size: 14px;
+      line-height: 1.6;
+    }
   }
 }
 
 .button-group {
   display: flex;
-  justify-content: flex-end;
-  align-items: center;
   gap: 10px;
-  margin-top: 10px;
-  padding: 10px 0;
-  flex-wrap: wrap;
+  flex-shrink: 0;
 
-  .el-button {
-    width: 120px;
-    height: 40px;
-    font-size: 14px;
+  .send-btn {
+    background: linear-gradient(135deg, var(--apple-blue) 0%, var(--apple-indigo) 100%) !important;
+    border: none !important;
+    border-radius: var(--radius-sm) !important;
+    box-shadow: 0 4px 12px rgba(0, 122, 255, 0.25) !important;
+
+    &:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 16px rgba(0, 122, 255, 0.35) !important;
+    }
+  }
+
+  .el-button:not(.send-btn) {
+    border-radius: var(--radius-sm) !important;
   }
 }
 </style>

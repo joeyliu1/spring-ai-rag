@@ -4,28 +4,16 @@
       :default-active="defaultPath"
       class="aside-menu"
       :collapse="isCollapse"
-      background-color="#1A478A"
-      text-color="#FFFFFF"
-      active-text-color="#91CC75"
     >
       <div class="menu-header">
-<!--        <el-icon size="50">-->
-<!--          <el-image :src="Logo"></el-image>-->
-<!--        </el-icon>-->
-        <h1>LSS-RAG-AI</h1>
-        <el-text style="color: #bfcbd9" size="small">知识库AI问答系统</el-text>
+        <h1 class="logo-text">LSS-RAG-AI</h1>
+        <el-text style="color: var(--apple-text-secondary)" size="small">知识库AI问答系统</el-text>
       </div>
       <el-divider />
 
-      <!-- <div class="aside-header">
-      <el-icon :size="25" style="cursor: pointer" @click="openMenu">
-        <Expand v-if="isCollapse" />
-        <Fold v-else />
-      </el-icon>
-    </div> -->
-
       <el-menu-item
         v-for="item in menuRouterList"
+        :key="item.path"
         :index="item.path"
         @click="handleSelect(item)"
       >
@@ -41,7 +29,7 @@
 
 <script setup lang="ts">
 import routes from "@/router/config.ts";
-import router from "@/router"; 
+import router from "@/router";
 
 const emit = defineEmits(["changeAside"]);
 const isCollapse = ref(false);
@@ -55,7 +43,7 @@ const menuRouterList = computed(() => {
   });
 });
 
-router.afterEach((to) => { 
+router.afterEach((to) => {
   defaultPath.value = to.path;
 });
 
@@ -75,25 +63,76 @@ const handleSelect = (e: any) => {
 #basic-aside {
   height: 100%;
 }
+
 :deep(.el-menu) {
-  z-index: 10; // 配合 ChatView
+  z-index: 10;
 }
-.aside-header {
-  display: flex;
-  justify-content: right;
-}
+
 .menu-header {
   height: 80px;
   display: flex;
   justify-content: center;
   align-items: center;
-  color: #bfcbd9;
   flex-wrap: wrap;
+  padding: 10px 0;
 }
+
+.logo-text {
+  background: linear-gradient(135deg, var(--apple-blue) 0%, var(--apple-purple) 50%, var(--apple-indigo) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
 .aside-menu {
-  border-right: none;
-  border: 1px solid rgb(239, 239, 239);
   height: 100%;
-  box-shadow: 1px 1px 1px 1px rgb(240, 239, 239);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--apple-border);
+  background: var(--apple-card);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: var(--shadow-md);
+  overflow: hidden;
+  padding: 8px;
+
+  :deep(.el-menu-item) {
+    border-radius: var(--radius-sm);
+    margin-bottom: 4px;
+    height: 44px;
+    line-height: 44px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    color: var(--apple-text-primary);
+
+    &:hover {
+      background: rgba(0, 122, 255, 0.08) !important;
+      transform: translateX(4px);
+    }
+
+    &.is-active {
+      background: linear-gradient(135deg, rgba(0, 122, 255, 0.12) 0%, rgba(175, 82, 222, 0.12) 100%) !important;
+      color: var(--apple-blue) !important;
+      font-weight: 600;
+
+      &::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 3px;
+        height: 20px;
+        background: linear-gradient(180deg, var(--apple-blue) 0%, var(--apple-purple) 100%);
+        border-radius: 0 3px 3px 0;
+      }
+    }
+  }
+
+  :deep(.el-divider) {
+    margin: 10px 0;
+    --el-divider-border-color: var(--apple-border);
+  }
 }
 </style>

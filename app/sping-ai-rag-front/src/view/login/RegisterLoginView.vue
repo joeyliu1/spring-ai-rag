@@ -1,38 +1,65 @@
 <template>
   <div class="login-container">
-    <el-form 
-      v-if="!isLoggedIn" 
-      :model="loginForm" 
-      ref="formRef" 
+    <el-form
+      v-if="!isLoggedIn"
+      :model="loginForm"
+      ref="formRef"
       label-width="100px"
       v-loading="isLoading"
       element-loading-text="处理中..."
       element-loading-background="rgba(255, 255, 255, 0.8)"
+      class="login-form"
     >
+      <div class="form-header">
+        <h2 class="form-title">欢迎回来</h2>
+        <p class="form-subtitle">登录到 LSS-RAG-AI 系统</p>
+      </div>
+
       <el-form-item label="用户名" prop="userName" :rules="[{ required: true, message: '请输入用户名', trigger: 'blur' }]">
-        <el-input v-model="loginForm.userName" placeholder="请输入用户名"></el-input>
+        <el-input v-model="loginForm.userName" placeholder="请输入用户名" size="large">
+          <template #prefix>
+            <el-icon><User /></el-icon>
+          </template>
+        </el-input>
       </el-form-item>
       <el-form-item label="密码" prop="password" :rules="[{ required: true, message: '请输入密码', trigger: 'blur' }]">
-        <el-input v-model="loginForm.password" type="password" placeholder="请输入密码"></el-input>
+        <el-input v-model="loginForm.password" type="password" placeholder="请输入密码" size="large" show-password>
+          <template #prefix>
+            <el-icon><Lock /></el-icon>
+          </template>
+        </el-input>
       </el-form-item>
       <el-form-item>
-        <el-button type="primary" @click="handleLogin">登录</el-button>
-        <el-button type="success" @click="showRegisterDialog">注册</el-button>
+        <el-button type="primary" class="login-btn" @click="handleLogin" size="large" :loading="isLoading">
+          登录
+        </el-button>
+        <el-button class="register-btn" @click="showRegisterDialog" size="large">
+          注册账号
+        </el-button>
       </el-form-item>
     </el-form>
 
     <div v-else class="welcome-container">
-      <h1 class="welcome-title">欢迎使用基于RAG技术的个人知识库AI问答系统</h1>
+      <div class="welcome-content">
+        <h1 class="welcome-title">欢迎使用</h1>
+        <p class="welcome-subtitle">基于 RAG 技术的个人知识库 AI 问答系统</p>
+      </div>
       <div class="user-profile">
-        <el-dropdown @command="handleCommand">
-          <el-avatar :size="50" :src="avatarUrl" @error="() => true">
+        <el-dropdown @command="handleCommand" trigger="click">
+          <el-avatar :size="50" :src="avatarUrl" @error="() => true" class="user-avatar">
             {{ userInfo.userName?.charAt(0)?.toUpperCase() }}
           </el-avatar>
           <template #dropdown>
             <el-dropdown-menu>
-              <el-dropdown-item command="profile">个人信息</el-dropdown-item>
-              <el-dropdown-item command="password">修改密码</el-dropdown-item>
-              <el-dropdown-item command="logout">退出登录</el-dropdown-item>
+              <el-dropdown-item command="profile">
+                <el-icon><User /></el-icon> 个人信息
+              </el-dropdown-item>
+              <el-dropdown-item command="password">
+                <el-icon><Lock /></el-icon> 修改密码
+              </el-dropdown-item>
+              <el-dropdown-item command="logout" divided>
+                <el-icon><SwitchButton /></el-icon> 退出登录
+              </el-dropdown-item>
             </el-dropdown-menu>
           </template>
         </el-dropdown>
@@ -45,6 +72,7 @@
       title="个人信息"
       width="500px"
       :close-on-click-modal="false"
+      class="apple-dialog"
     >
       <div class="user-info" v-if="!isEditing">
         <div class="info-item">
@@ -52,7 +80,7 @@
           <span class="info-value">{{ userInfo.name }}</span>
         </div>
         <div class="info-item">
-          <span class="info-label"><el-icon><UserFilled /></el-icon> 用户名</span>
+          <span class="info-label"><el-icon><Avatar /></el-icon> 用户名</span>
           <span class="info-value">{{ userInfo.userName }}</span>
         </div>
         <div class="info-item">
@@ -87,7 +115,7 @@
           <el-input v-model="editForm.phone" placeholder="请输入手机号"></el-input>
         </el-form-item>
         <el-form-item label="性别" prop="sex">
-          <el-select v-model="editForm.sex" placeholder="请选择性别">
+          <el-select v-model="editForm.sex" placeholder="请选择性别" style="width: 100%">
             <el-option label="男" value="男"></el-option>
             <el-option label="女" value="女"></el-option>
           </el-select>
@@ -113,31 +141,52 @@
 
     <el-dialog
       v-model="registerDialogVisible"
-      title="注册"
-      width="30%"
+      title="注册账号"
+      width="500px"
       :close-on-click-modal="false"
+      class="apple-dialog"
     >
       <el-form :model="registerForm" ref="registerFormRef" label-width="100px">
         <el-form-item label="用户名" prop="userName" :rules="[{ required: true, message: '请输入用户名', trigger: 'blur' }]">
-          <el-input v-model="registerForm.userName" placeholder="请输入用户名"></el-input>
+          <el-input v-model="registerForm.userName" placeholder="请输入用户名">
+            <template #prefix>
+              <el-icon><User /></el-icon>
+            </template>
+          </el-input>
         </el-form-item>
         <el-form-item label="密码" prop="password" :rules="[{ required: true, message: '请输入密码', trigger: 'blur' }]">
-          <el-input v-model="registerForm.password" type="password" placeholder="请输入密码"></el-input>
+          <el-input v-model="registerForm.password" type="password" placeholder="请输入密码" show-password>
+            <template #prefix>
+              <el-icon><Lock /></el-icon>
+            </template>
+          </el-input>
         </el-form-item>
         <el-form-item label="手机号" prop="phone" :rules="[{ required: true, message: '请输入手机号', trigger: 'blur' }]">
-          <el-input v-model="registerForm.phone" placeholder="请输入手机号"></el-input>
+          <el-input v-model="registerForm.phone" placeholder="请输入手机号">
+            <template #prefix>
+              <el-icon><Iphone /></el-icon>
+            </template>
+          </el-input>
         </el-form-item>
         <el-form-item label="姓名" prop="name" :rules="[{ required: true, message: '请输入姓名', trigger: 'blur' }]">
-          <el-input v-model="registerForm.name" placeholder="请输入姓名"></el-input>
+          <el-input v-model="registerForm.name" placeholder="请输入姓名">
+            <template #prefix>
+              <el-icon><User /></el-icon>
+            </template>
+          </el-input>
         </el-form-item>
         <el-form-item label="性别" prop="sex">
-          <el-select v-model="registerForm.sex" placeholder="请选择性别">
+          <el-select v-model="registerForm.sex" placeholder="请选择性别" style="width: 100%">
             <el-option label="男" value="男"></el-option>
             <el-option label="女" value="女"></el-option>
           </el-select>
         </el-form-item>
         <el-form-item label="身份证号" prop="idNumber" :rules="[{ required: true, message: '请输入身份证号', trigger: 'blur' }]">
-          <el-input v-model="registerForm.idNumber" placeholder="请输入身份证号"></el-input>
+          <el-input v-model="registerForm.idNumber" placeholder="请输入身份证号">
+            <template #prefix>
+              <el-icon><Document /></el-icon>
+            </template>
+          </el-input>
         </el-form-item>
       </el-form>
       <template #footer>
@@ -152,8 +201,9 @@
     <el-dialog
       v-model="passwordDialogVisible"
       title="修改密码"
-      width="500px"
+      width="450px"
       :close-on-click-modal="false"
+      class="apple-dialog"
     >
       <el-form
         ref="passwordFormRef"
@@ -162,13 +212,13 @@
         label-width="100px"
       >
         <el-form-item label="原密码" prop="oldPassword">
-          <el-input v-model="passwordForm.oldPassword" type="password" placeholder="请输入原密码" />
+          <el-input v-model="passwordForm.oldPassword" type="password" placeholder="请输入原密码" show-password />
         </el-form-item>
         <el-form-item label="新密码" prop="newPassword">
-          <el-input v-model="passwordForm.newPassword" type="password" placeholder="请输入新密码" />
+          <el-input v-model="passwordForm.newPassword" type="password" placeholder="请输入新密码" show-password />
         </el-form-item>
         <el-form-item label="确认密码" prop="confirmPassword">
-          <el-input v-model="passwordForm.confirmPassword" type="password" placeholder="请再次输入新密码" />
+          <el-input v-model="passwordForm.confirmPassword" type="password" placeholder="请再次输入新密码" show-password />
         </el-form-item>
       </el-form>
       <template #footer>
@@ -184,7 +234,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import {ElMessage, FormInstance, FormRules} from 'element-plus'
-import { User, UserFilled, Iphone, Male, Document, Timer } from '@element-plus/icons-vue'
+import { User, Lock, Avatar, Iphone, Male, Document, Timer, SwitchButton } from '@element-plus/icons-vue'
 import router from '@/router'
 import { BASE_URL } from '@/http/config'
 import { updatePasswordApi } from '@/api/UserApi'
@@ -345,7 +395,6 @@ const handleRegister = async () => {
     if (data.code === 0) {
       ElMessage({ message: '注册成功', type: 'success' })
       registerDialogVisible.value = false
-      // 清空注册表单
       registerForm.value = {
         name: '',
         userName: '',
@@ -401,7 +450,7 @@ const handleUpdate = async () => {
     const data = await response.json()
     if (data.code === 0) {
       ElMessage({ message: '更新成功', type: 'success' })
-      await fetchUserInfo() // 重新获取用户信息
+      await fetchUserInfo()
       isEditing.value = false
     } else {
       ElMessage({ message: data.message || '更新失败', type: 'error' })
@@ -414,7 +463,6 @@ const handleUpdate = async () => {
   }
 }
 
-// 密码表单验证规则
 const passwordRules: FormRules = {
   oldPassword: [
     { required: true, message: '请输入原密码', trigger: 'blur' },
@@ -440,7 +488,6 @@ const passwordRules: FormRules = {
   ]
 }
 
-// 显示修改密码对话框
 const showPasswordDialog = () => {
   passwordForm.value = {
     id: userInfo.value.id,
@@ -451,10 +498,9 @@ const showPasswordDialog = () => {
   passwordDialogVisible.value = true
 }
 
-// 处理修改密码
 const handleUpdatePassword = async () => {
   if (!passwordFormRef.value) return
-  
+
   await passwordFormRef.value.validate(async (valid: boolean) => {
     if (valid) {
       try {
@@ -463,7 +509,6 @@ const handleUpdatePassword = async () => {
         if (response.code === 0) {
           ElMessage.success('密码修改成功')
           passwordDialogVisible.value = false
-          // 清空表单
           passwordForm.value = {
             id: userInfo.value.id,
             oldPassword: '',
@@ -498,66 +543,271 @@ onMounted(() => {
   display: flex;
   justify-content: center;
   align-items: center;
-  background-color: #f5f5f5;
+  background: linear-gradient(135deg, #f0f0f5 0%, #fafafa 50%, #f5f5f7 100%);
+  position: relative;
+  overflow: hidden;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle at 30% 30%, rgba(0, 122, 255, 0.05) 0%, transparent 50%),
+              radial-gradient(circle at 70% 70%, rgba(175, 82, 222, 0.05) 0%, transparent 50%);
+    animation: float 20s ease-in-out infinite;
+  }
+}
+
+@keyframes float {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(-2%, -2%); }
+}
+
+.login-form {
+  width: 420px;
+  padding: 40px;
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--apple-border);
+  box-shadow: var(--shadow-lg);
+  position: relative;
+  z-index: 1;
+  animation: slideUp 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.form-header {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.form-title {
+  font-size: 28px;
+  font-weight: 600;
+  background: linear-gradient(135deg, var(--apple-blue) 0%, var(--apple-purple) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 8px;
+}
+
+.form-subtitle {
+  color: var(--apple-text-secondary);
+  font-size: 14px;
+}
+
+.login-btn {
+  width: 100%;
+  height: 48px;
+  font-size: 16px;
+  font-weight: 600;
+  background: linear-gradient(135deg, var(--apple-blue) 0%, var(--apple-indigo) 100%) !important;
+  border: none !important;
+  border-radius: var(--radius-md) !important;
+  box-shadow: 0 4px 16px rgba(0, 122, 255, 0.3) !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 24px rgba(0, 122, 255, 0.4) !important;
+  }
+}
+
+.register-btn {
+  width: 100%;
+  height: 48px;
+  font-size: 16px;
+  font-weight: 500;
+  border-radius: var(--radius-md) !important;
+  border: 1px solid var(--apple-border) !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+
+  &:hover {
+    border-color: var(--apple-blue) !important;
+    color: var(--apple-blue) !important;
+    background: rgba(0, 122, 255, 0.03) !important;
+  }
 }
 
 .welcome-container {
   text-align: center;
   width: 100%;
   position: relative;
+  z-index: 1;
+  animation: fadeIn 0.6s ease-out;
+}
 
-  h1 {
-    margin-bottom: 80px;
-    color: #409EFF;
-    font-size: 45px;
-  }
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.welcome-content {
+  margin-bottom: 60px;
+}
+
+.welcome-title {
+  font-size: 48px;
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--apple-blue) 0%, var(--apple-purple) 50%, var(--apple-indigo) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 16px;
+  animation: gradientShift 5s ease infinite;
+  background-size: 200% 200%;
+}
+
+@keyframes gradientShift {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+.welcome-subtitle {
+  font-size: 20px;
+  color: var(--apple-text-secondary);
+  font-weight: 400;
 }
 
 .user-profile {
   position: fixed;
-  top: 20px;
-  right: 20px;
+  top: 24px;
+  right: 24px;
   cursor: pointer;
   z-index: 1000;
-  color: #409EFF;
+}
+
+.user-avatar {
+  border: 3px solid rgba(255, 255, 255, 0.8);
+  box-shadow: var(--shadow-md);
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  background: linear-gradient(135deg, var(--apple-blue) 0%, var(--apple-indigo) 100%);
+
+  &:hover {
+    transform: scale(1.08);
+    box-shadow: var(--shadow-lg);
+  }
 }
 
 .user-info {
-  padding: 20px;
-  
+  padding: 10px 0;
+
   .info-item {
     display: flex;
     align-items: center;
-    margin-bottom: 15px;
-    padding: 10px;
-    border-radius: 4px;
-    background-color: #f5f7fa;
-    
-    .info-label {
-      width: 80px;
-      color: #909399;
-      font-size: 14px;
+    margin-bottom: 16px;
+    padding: 12px 16px;
+    border-radius: var(--radius-md);
+    background: rgba(0, 122, 255, 0.03);
+    transition: all 0.2s ease;
+
+    &:hover {
+      background: rgba(0, 122, 255, 0.06);
     }
-    
-    .info-value {
-      color: #303133;
+
+    .info-label {
+      width: 90px;
+      color: var(--apple-text-secondary);
       font-size: 14px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+
+      .el-icon {
+        color: var(--apple-blue);
+      }
+    }
+
+    .info-value {
+      color: var(--apple-text-primary);
+      font-size: 14px;
+      font-weight: 500;
       flex: 1;
     }
   }
 }
 
-.el-form {
-  width: 400px;
-  padding: 20px;
-  background-color: white;
-  border-radius: 4px;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+:deep(.apple-dialog) {
+  border-radius: var(--radius-lg) !important;
+  overflow: hidden;
+
+  .el-dialog__header {
+    background: linear-gradient(135deg, rgba(0, 122, 255, 0.03) 0%, rgba(175, 82, 222, 0.03) 100%);
+    padding: 20px 24px !important;
+    margin: 0 !important;
+    border-bottom: 1px solid var(--apple-border);
+  }
+
+  .el-dialog__title {
+    font-weight: 600;
+    font-size: 18px;
+    background: linear-gradient(135deg, var(--apple-blue) 0%, var(--apple-purple) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .el-dialog__body {
+    padding: 24px !important;
+  }
+
+  .el-dialog__footer {
+    padding: 16px 24px !important;
+    border-top: 1px solid var(--apple-border);
+  }
 }
 
 .dialog-footer {
   display: flex;
   justify-content: flex-end;
-  gap: 10px;
+  gap: 12px;
+
+  .el-button--primary {
+    background: linear-gradient(135deg, var(--apple-blue) 0%, var(--apple-indigo) 100%) !important;
+    border: none !important;
+    border-radius: var(--radius-sm) !important;
+    box-shadow: 0 2px 8px rgba(0, 122, 255, 0.25) !important;
+
+    &:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(0, 122, 255, 0.35) !important;
+    }
+  }
 }
-</style> 
+
+:deep(.el-form-item__label) {
+  font-weight: 500;
+  color: var(--apple-text-primary);
+}
+
+:deep(.el-input) {
+  --el-input-border-radius: var(--radius-sm);
+}
+
+:deep(.el-input__wrapper) {
+  border-radius: var(--radius-sm) !important;
+  padding: 4px 12px;
+}
+
+:deep(.el-dropdown-menu__item) {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-radius: var(--radius-sm);
+}
+</style>
