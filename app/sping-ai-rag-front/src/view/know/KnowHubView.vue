@@ -94,26 +94,26 @@
             {{ format(new Date(scope.row.updateTime), "yyyy-MM-dd HH:mm") }}
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="150" fixed="right">
+        <el-table-column label="操作" width="120" fixed="right">
           <template #default="scope">
-            <el-button
-              @click="deleteStoreFile(scope.row)"
-              type="danger"
-              size="small"
-              text
-            >
-              <el-icon><Delete /></el-icon>
-              删除
-            </el-button>
-            <el-button
-              @click="openFilePreview(scope.row)"
-              type="primary"
-              size="small"
-              text
-            >
-              <el-icon><Download /></el-icon>
-              下载
-            </el-button>
+            <div class="action-buttons">
+              <el-button
+                @click="deleteStoreFile(scope.row)"
+                type="danger"
+                size="small"
+                :icon="Delete"
+              >
+                删除
+              </el-button>
+              <el-button
+                @click="openFilePreview(scope.row)"
+                type="primary"
+                size="small"
+                :icon="Download"
+              >
+                下载
+              </el-button>
+            </div>
           </template>
         </el-table-column>
       </el-table>
@@ -489,6 +489,35 @@ onMounted(() => {
   border: 1px solid var(--apple-border);
   box-shadow: var(--shadow-sm);
   overflow: hidden;
+
+  .action-buttons {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+
+    :deep(.el-button) {
+      display: inline-flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      width: 80px !important;
+      min-width: 80px !important;
+      max-width: 80px !important;
+      height: 28px !important;
+      padding: 0 10px !important;
+      margin: 0 !important;
+      font-size: 13px !important;
+      border: none !important;
+    }
+
+    :deep(.el-button .el-icon) {
+      display: inline-flex;
+      align-items: center;
+      margin-right: 4px;
+      font-size: 14px;
+    }
+  }
 
   :deep(.el-table) {
     --el-table-border-color: var(--apple-border);

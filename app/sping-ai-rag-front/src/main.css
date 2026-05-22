@@ -196,44 +196,44 @@ a:hover {
   transform: translateY(0);
 }
 
-.el-button--primary {
+.el-button--primary:not(.is-text) {
   background: linear-gradient(135deg, var(--apple-blue) 0%, var(--apple-indigo) 100%) !important;
   border: none !important;
   box-shadow: var(--shadow-button) !important;
 }
 
-.el-button--primary:hover {
+.el-button--primary:not(.is-text):hover {
   background: linear-gradient(135deg, #0066DD 0%, #4A44C4 100%) !important;
   box-shadow: 0 6px 20px rgba(0, 122, 255, 0.35) !important;
   transform: translateY(-2px);
 }
 
-.el-button--success {
+.el-button--success:not(.is-text) {
   background: linear-gradient(135deg, var(--apple-green) 0%, #30D158 100%) !important;
   box-shadow: 0 4px 12px rgba(52, 199, 89, 0.25) !important;
 }
 
-.el-button--success:hover {
+.el-button--success:not(.is-text):hover {
   box-shadow: 0 6px 20px rgba(52, 199, 89, 0.35) !important;
   transform: translateY(-2px);
 }
 
-.el-button--warning {
+.el-button--warning:not(.is-text) {
   background: linear-gradient(135deg, var(--apple-orange) 0%, #FFCC00 100%) !important;
   box-shadow: 0 4px 12px rgba(255, 149, 0, 0.25) !important;
 }
 
-.el-button--warning:hover {
+.el-button--warning:not(.is-text):hover {
   box-shadow: 0 6px 20px rgba(255, 149, 0, 0.35) !important;
   transform: translateY(-2px);
 }
 
-.el-button--danger {
+.el-button--danger:not(.is-text) {
   background: linear-gradient(135deg, var(--apple-red) 0%, #FF6961 100%) !important;
   box-shadow: 0 4px 12px rgba(255, 59, 48, 0.25) !important;
 }
 
-.el-button--danger:hover {
+.el-button--danger:not(.is-text):hover {
   box-shadow: 0 6px 20px rgba(255, 59, 48, 0.35) !important;
   transform: translateY(-2px);
 }
