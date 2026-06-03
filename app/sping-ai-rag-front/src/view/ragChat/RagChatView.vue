@@ -19,7 +19,7 @@
                 <el-icon><MagicStick /></el-icon>
               </div>
             </div>
-            <div class="message-content" :class="{ 'typing': message.isTyping }" v-html="renderMarkdown(message.content)">
+            <div class="message-content" :class="{ 'typing': message.isTyping }" v-html="message.htmlContent || renderMarkdown(message.content)">
             </div>
 
             <el-button
@@ -108,7 +108,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, nextTick } from 'vue'
+import { ref, onMounted } from 'vue'
 import { marked } from 'marked'
 import { Document, User, MagicStick, Position } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
@@ -123,7 +123,15 @@ const userInput = ref('')
 const isLoading = ref(false)
 const messageContainer = ref<HTMLElement | null>(null)
 const knowledgeFiles = ref<StoreFile[]>([])
-const selectedFiles = ref<string[]>([])
+const selectedFiles = ref<number[]>([])
+const STREAM_FLUSH_INTERVAL = 80
+
+const createMessage = (role: ChatMessage['role'], content: string, isTyping = false): ChatMessage => ({
+  role,
+  content,
+  htmlContent: renderMarkdown(content),
+  isTyping
+})
 
 // 加载知识库文件列表
 const loadKnowledgeFiles = () => {
@@ -153,12 +161,6 @@ const loadKnowledgeFiles = () => {
     });
 };
 
-// 处理普通对话
-const handleSend = async () => {
-  if (!userInput.value.trim() || isLoading.value) return
-  await sendMessage(ChatApi.Chat)
-}
-
 // 处理RAG对话
 const handleRagSend = async () => {
   if (!userInput.value.trim() || isLoading.value) return
@@ -166,10 +168,11 @@ const handleRagSend = async () => {
 }
 
 // 发送消息通用方法
-const sendMessage = async (url: string, selectedFileIds: string[] = []) => {
+const sendMessage = async (url: string, selectedFileIds: number[] = []) => {
   messages.value.push({
     role: 'user',
-    content: userInput.value
+    content: userInput.value,
+    htmlContent: renderMarkdown(userInput.value)
   })
 
   const currentInput = userInput.value
@@ -179,13 +182,74 @@ const sendMessage = async (url: string, selectedFileIds: string[] = []) => {
   messages.value.push({
     role: 'assistant',
     content: '正在思考中...',
+    htmlContent: renderMarkdown('正在思考中...'),
     isTyping: true
   })
 
   const lastIndex = messages.value.length - 1
   const reactiveMessage = messages.value[lastIndex]
 
-  let isFirstChunk = true;
+  let isFirstChunk = true
+  let pendingText = ''
+  let flushTimer: number | null = null
+
+  const flushPendingText = () => {
+    if (!pendingText) return
+
+    if (isFirstChunk && reactiveMessage.content === '正在思考中...') {
+      reactiveMessage.content = ''
+      isFirstChunk = false
+    }
+
+    reactiveMessage.content += pendingText
+    pendingText = ''
+    reactiveMessage.htmlContent = renderMarkdown(reactiveMessage.content)
+
+    scrollToBottom()
+  }
+
+  const scheduleFlush = () => {
+    if (flushTimer !== null) return
+
+    flushTimer = window.setTimeout(() => {
+      flushTimer = null
+      flushPendingText()
+    }, STREAM_FLUSH_INTERVAL)
+  }
+
+  const handleStreamMessage = (value: MessageEvent) => {
+    pendingText += value.data || ''
+    scheduleFlush()
+  }
+
+  const handleStreamClose = () => {
+    if (flushTimer !== null) {
+      window.clearTimeout(flushTimer)
+      flushTimer = null
+    }
+
+    flushPendingText()
+    isLoading.value = false
+    reactiveMessage.isTyping = false
+    reactiveMessage.htmlContent = renderMarkdown(reactiveMessage.content)
+    scrollToBottom()
+  }
+
+  const handleStreamError = (error: unknown) => {
+    window.console.error('Error:', error)
+
+    if (flushTimer !== null) {
+      window.clearTimeout(flushTimer)
+      flushTimer = null
+    }
+
+    pendingText = ''
+    isLoading.value = false
+    reactiveMessage.isTyping = false
+    reactiveMessage.content = '抱歉，发生了错误，请稍后重试。'
+    reactiveMessage.htmlContent = renderMarkdown(reactiveMessage.content)
+    scrollToBottom()
+  }
 
   const fileSources = selectedFileIds.map(id => {
     const file = knowledgeFiles.value.find(f => f.id === id)
@@ -193,45 +257,9 @@ const sendMessage = async (url: string, selectedFileIds: string[] = []) => {
   }).filter(name => name !== '')
 
   if (fileSources.length > 0) {
-    getStreamChat(currentInput, url, (value) => {
-      const text = value.data;
-
-      if (isFirstChunk && reactiveMessage.content === '正在思考中...') {
-        reactiveMessage.content = '';
-        isFirstChunk = false;
-      }
-
-      reactiveMessage.content += text
-
-      scrollToBottom()
-
-    }, (error) => {
-      window.console.error('Error:', error)
-      reactiveMessage.content = '抱歉，发生了错误，请稍后重试。'
-    }, () => {
-      isLoading.value = false
-      reactiveMessage.isTyping = false
-    }, fileSources)
+    getStreamChat(currentInput, url, handleStreamMessage, handleStreamError, handleStreamClose, fileSources)
   } else {
-    getStreamChat(currentInput, url, (value) => {
-      const text = value.data;
-
-      if (isFirstChunk && reactiveMessage.content === '正在思考中...') {
-        reactiveMessage.content = '';
-        isFirstChunk = false;
-      }
-
-      reactiveMessage.content += text
-
-      scrollToBottom()
-
-    }, (error) => {
-      window.console.error('Error:', error)
-      reactiveMessage.content = '抱歉，发生了错误，请稍后重试。'
-    }, () => {
-      isLoading.value = false
-      reactiveMessage.isTyping = false
-    })
+    getStreamChat(currentInput, url, handleStreamMessage, handleStreamError, handleStreamClose)
   }
 };
 
@@ -241,11 +269,9 @@ const scrollToBottom = () => {
 
   const container = messageContainer.value
 
-  container.scrollTop = container.scrollHeight
-
-  setTimeout(() => {
+  requestAnimationFrame(() => {
     container.scrollTop = container.scrollHeight
-  }, 100)
+  })
 }
 
 // 复制消息
@@ -268,10 +294,9 @@ const copyMessage = async (content: string) => {
 
 // 清空对话
 const clearMessages = () => {
-  messages.value = [{
-    role: 'assistant',
-    content: '你好！我是AI助手，请问有什么可以帮助你的吗？'
-  }]
+  messages.value = [
+    createMessage('assistant', '你好！我是AI助手，请问有什么可以帮助你的吗？')
+  ]
 }
 
 // Markdown渲染
@@ -280,7 +305,7 @@ const renderMarkdown = (content: string) => {
     return marked(content, {
       breaks: true,
       gfm: true
-    })
+    }) as string
   } catch (error) {
     console.error('Markdown parsing error:', error)
     return content
@@ -288,12 +313,12 @@ const renderMarkdown = (content: string) => {
 }
 
 // 处理文件选择变化
-const handleFileSelectionChange = (value: string[]) => {
+const handleFileSelectionChange = (value: number[]) => {
   selectedFiles.value = value
 }
 
 // 移除选中的文件
-const removeSelectedFile = (fileId: string) => {
+const removeSelectedFile = (fileId: number) => {
   const index = selectedFiles.value.indexOf(fileId)
   if (index > -1) {
     selectedFiles.value.splice(index, 1)
@@ -301,13 +326,13 @@ const removeSelectedFile = (fileId: string) => {
 }
 
 // 根据文件ID获取文件名
-const getFileNameById = (fileId: string) => {
+const getFileNameById = (fileId: number) => {
   const file = knowledgeFiles.value.find(f => f.id === fileId)
   return file ? file.fileName : ''
 }
 
 // 根据文件ID获取截断的文件名
-const getFileNameByLength = (fileId: string, maxLength: number) => {
+const getFileNameByLength = (fileId: number, maxLength: number) => {
   const fileName = getFileNameById(fileId)
   if (fileName.length <= maxLength) {
     return fileName
@@ -316,10 +341,7 @@ const getFileNameByLength = (fileId: string, maxLength: number) => {
 }
 
 onMounted(() => {
-  messages.value.push({
-    role: 'assistant',
-    content: '你好！我是AI助手，请问有什么可以帮助你的吗？'
-  })
+  messages.value.push(createMessage('assistant', '你好！我是AI助手，请问有什么可以帮助你的吗？'))
 
   loadKnowledgeFiles()
 })
@@ -328,10 +350,15 @@ onMounted(() => {
 <style scoped lang="less">
 .chat-container {
   height: 100%;
+  min-height: 0;
   padding: 0;
+  display: flex;
+  overflow: hidden;
 
   .box-card {
+    width: 100%;
     height: 100%;
+    min-height: 0;
     display: flex;
     flex-direction: column;
     border-radius: var(--radius-lg);
@@ -392,10 +419,11 @@ onMounted(() => {
 }
 
 .chat-messages {
-  flex: 1;
-  overflow-y: auto;
-  padding: 20px;
+  flex: 1 1 auto;
   min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 20px;
 
   &::-webkit-scrollbar {
     width: 6px;
@@ -493,6 +521,7 @@ onMounted(() => {
 
 .message-content {
   display: inline-block;
+  max-width: 100%;
   padding: 12px 16px;
   border-radius: 18px;
   word-break: break-word;
@@ -564,6 +593,9 @@ onMounted(() => {
 }
 
 .input-area {
+  flex: 0 0 auto;
+  position: relative;
+  z-index: 2;
   border-top: 1px solid var(--apple-border);
   background: rgba(255, 255, 255, 0.5);
 }

@@ -10,6 +10,7 @@ export const ChatApi = {
 export interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
+  htmlContent?: string;
   isTyping?: boolean;
 }
 
@@ -67,6 +68,7 @@ export const sendChatMessageWithSSE = (
 ) => {
   return getStreamChat(
     encodeURIComponent(message),
+    ChatApi.Chat,
     onMessage,
     onError,
     onClose

@@ -30,9 +30,18 @@ const changeAside = (isCollapse: boolean) => {
 #basic-layout {
   margin: 10px;
   height: calc(100vh - 20px);
+  overflow: hidden;
+}
+
+.el-container {
+  height: 100%;
+  min-height: 0;
 }
 
 .main-content {
+  box-sizing: border-box;
+  height: 100%;
+  min-height: 0;
   margin-left: 10px;
   background: rgba(255, 255, 255, 0.6);
   backdrop-filter: blur(20px);
