@@ -3,8 +3,8 @@ package com.lss.springairag.controller;
 import com.lss.springairag.annotation.Loggable;
 import com.lss.springairag.common.ApplicationConstant;
 import com.lss.springairag.context.BaseContext;
-import com.lss.springairag.entity.SensitiveWord;
-import com.lss.springairag.service.SensitiveWordService;
+import com.lss.springairag.pojo.vo.SensitiveAuditResult;
+import com.lss.springairag.service.SensitiveAuditService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
@@ -19,61 +19,61 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Flux;
 
-import java.util.List;
-
-
-@Tag(name="AiRagController",description = "chat对话接口")
+@Tag(name = "AiRagController", description = "chat对话接口")
 @Slf4j
 @RestController
 @RequestMapping(ApplicationConstant.API_VERSION + "/chat")
 public class ChatController {
 
     @Autowired
-    private  ChatClient chatClient;
+    private ChatClient chatClient;
 
     @Autowired
-    private SensitiveWordService sensitiveWordService;
+    private SensitiveAuditService sensitiveAuditService;
 
-
-    public ChatController(ChatClient.Builder builder,ChatMemory chatMemory) {
+    public ChatController(ChatClient.Builder builder, ChatMemory chatMemory) {
 
         this.chatClient = builder
                 .defaultSystem("""
                         你是一家名为“Agent创业公司”的知识库系统的客户客服代理。请友好乐于助人，充满喜悦地回复。
                         """)
                 .defaultAdvisors(
-                        MessageChatMemoryAdvisor.builder(chatMemory).build() // CHAT MEMORY
+                        MessageChatMemoryAdvisor.builder(chatMemory).build()
 
-                        )
+                )
                 .build();
     }
 
-    @Operation(summary = "stream",description = "流式对话接口")
-    @GetMapping(value = "/stream",produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    @Operation(summary = "stream", description = "流式对话接口")
+    @GetMapping(value = "/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     @Loggable("message")
-    public Flux<String> streamRagChat(@RequestParam(value = "message", defaultValue = "你好" ) String message,
-                                      @RequestParam(value = "prompt", defaultValue = "你是一名AI助手，致力于帮助人们解决问题.") String prompt){
-        List<SensitiveWord> list = sensitiveWordService.list();
-
-        for(SensitiveWord sensitiveWord: list){
-            if (message.contains(sensitiveWord.getWord())){
-                return Flux.just("包含敏感词:" + sensitiveWord.getWord());
-            }
+    public Flux<String> streamRagChat(@RequestParam(value = "message", defaultValue = "你好") String message,
+                                      @RequestParam(value = "prompt", defaultValue = "你是一名AI助手，致力于帮助人们解决问题.") String prompt) {
+        SensitiveAuditResult inputAudit = sensitiveAuditService.auditInput(message, "chat");
+        if (inputAudit.isBlocked()) {
+            return Flux.just(inputAudit.getBlockMessage());
         }
 
         Long userId = BaseContext.getCurrentId();
-        return chatClient.prompt()
+        Flux<String> content = chatClient.prompt()
                 .system(prompt)
                 .advisors(a -> a
                         .param(ChatMemory.CONVERSATION_ID, userId))
                 .user(message)
                 .stream()
                 .content();
+        return auditOutput(content);
     }
 
-
-
-
-
-
+    private Flux<String> auditOutput(Flux<String> content) {
+        return content.collectList()
+                .flatMapMany(chunks -> {
+                    String response = String.join("", chunks);
+                    SensitiveAuditResult outputAudit = sensitiveAuditService.auditOutput(response, "chat");
+                    if (outputAudit.isBlocked()) {
+                        return Flux.just(outputAudit.getBlockMessage());
+                    }
+                    return Flux.just(response);
+                });
+    }
 }

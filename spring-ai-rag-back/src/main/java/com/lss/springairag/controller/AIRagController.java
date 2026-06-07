@@ -7,8 +7,8 @@ import com.lss.springairag.advisors.MetadataAwareQuestionAnswerAdvisor;
 import com.lss.springairag.annotation.Loggable;
 import com.lss.springairag.common.ApplicationConstant;
 import com.lss.springairag.context.BaseContext;
-import com.lss.springairag.entity.SensitiveWord;
-import com.lss.springairag.service.SensitiveWordService;
+import com.lss.springairag.pojo.vo.SensitiveAuditResult;
+import com.lss.springairag.service.SensitiveAuditService;
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
@@ -32,6 +32,7 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.LinkedHashMap;
+import java.util.Locale;
 import java.util.Map;
 
 @Slf4j
@@ -45,7 +46,7 @@ public class AIRagController {
     VectorStore vectorStore;
 
     @Autowired
-    private SensitiveWordService sensitiveWordService;
+    private SensitiveAuditService sensitiveAuditService;
 
     @Autowired
     private DashScopeRerankModel dashScopeRerankModel;
@@ -81,13 +82,9 @@ public class AIRagController {
     public Flux<String> generatePost(@RequestParam(value = "sources", required = false) List<String> sources,
                                      @RequestParam(value = "message", defaultValue = "你好") String message) throws IOException {
 
-        // 敏感词过滤
-        List<SensitiveWord> list = sensitiveWordService.list();
-
-        for (SensitiveWord sensitiveWord : list) {
-            if (message.contains(sensitiveWord.getWord())) {
-                return Flux.just("包含敏感词:" + sensitiveWord.getWord());
-            }
+        SensitiveAuditResult auditResult = sensitiveAuditService.auditInput(message, "rag_chat");
+        if (auditResult.isBlocked()) {
+            return Flux.just(auditResult.getBlockMessage());
         }
 
         // 检查是否是聚合查询   router方式
@@ -183,10 +180,22 @@ public class AIRagController {
                 .content();
 
         String citations = buildCitationAppendix(sourceDocuments);
-        if (citations.isEmpty()) {
-            return content;
-        }
-        return content.concatWith(Flux.just(citations));
+        return auditOutput(content, citations, "rag_chat");
+    }
+
+    private Flux<String> auditOutput(Flux<String> content, String citations, String scene) {
+        return content.collectList()
+                .flatMapMany(chunks -> {
+                    String response = String.join("", chunks);
+                    if (!citations.isEmpty()) {
+                        response = response + citations;
+                    }
+                    SensitiveAuditResult auditResult = sensitiveAuditService.auditOutput(response, scene);
+                    if (auditResult.isBlocked()) {
+                        return Flux.just(auditResult.getBlockMessage());
+                    }
+                    return Flux.just(response);
+                });
     }
 
     private String buildCitationAppendix(List<Document> documents) {
@@ -222,7 +231,7 @@ public class AIRagController {
                     .append(citation.chunkIndex());
             if (citation.score() != null) {
                 builder.append("，相似度 ")
-                        .append(String.format("%.4f", citation.score()));
+                        .append(String.format(Locale.ROOT, "%.4f", citation.score()));
             }
             builder.append("\n  > ")
                     .append(citation.preview())
