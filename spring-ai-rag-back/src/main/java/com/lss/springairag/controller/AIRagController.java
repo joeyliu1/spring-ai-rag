@@ -17,6 +17,7 @@ import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
 import org.springframework.ai.chat.client.advisor.vectorstore.QuestionAnswerAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.document.Document;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,7 +29,10 @@ import reactor.core.publisher.Flux;
 
 import java.io.IOException;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 @Slf4j
 @RestController
@@ -104,6 +108,7 @@ public class AIRagController {
      */
     private Flux<String> processNormalRagQuery(List<String> sources, String message) {
         Long userId = BaseContext.getCurrentId();
+        List<Document> sourceDocuments = List.of();
         ChatClient.ChatClientRequestSpec clientRequestSpec = chatClient.prompt()
                 .user(message)
                 .system(a -> a.param("current_data", LocalDate.now().toString()))
@@ -114,11 +119,13 @@ public class AIRagController {
         if (sources != null && !sources.isEmpty()) {
 
 
-            SearchRequest.Builder searchRequestBuilder = SearchRequest.builder()
+            SearchRequest searchRequest = SearchRequest.builder()
                     .query(message)
                     .similarityThreshold(0.1d).topK(5)
                     // source in ['xxx.pdf','xxxx']
-                    .filterExpression("source in " + JSON.toJSONString(sources));
+                    .filterExpression("source in " + JSON.toJSONString(sources))
+                    .build();
+            sourceDocuments = vectorStore.similaritySearch(searchRequest);
 
 
             // 增强QuestionAnswerAdvisor  ：
@@ -158,6 +165,7 @@ public class AIRagController {
                     .system(a -> a.param("rag_message", """
                             如果涉及RAG，请提供文件来源，我会提供给你文件来源，
                             请严格基于知识库内容回答用户问题，
+                            使用知识库片段回答时，请在相关句子后标注 [来源1]、[来源2] 这样的引用编号，
                             不要添加任何知识库之外的信息。如果知识库内容不完整，仅需基于已有信息作答，
                             不要自行补充。
                             """))
@@ -165,7 +173,7 @@ public class AIRagController {
                     //.advisors(advisorSpec -> advisorSpec.param(QuestionAnswerAdvisor.FILTER_EXPRESSION,"source in "+JSON.toJSONString(sources)));
 //                    .advisors(retrievalRerankAdvisor)
                     .advisors(QuestionAnswerAdvisor.builder(vectorStore)
-                            .searchRequest(searchRequestBuilder.build())
+                            .searchRequest(searchRequest)
                             .build());
         }
 
@@ -174,7 +182,72 @@ public class AIRagController {
                 .stream()// 流式方式
                 .content();
 
-        return content;
+        String citations = buildCitationAppendix(sourceDocuments);
+        if (citations.isEmpty()) {
+            return content;
+        }
+        return content.concatWith(Flux.just(citations));
+    }
+
+    private String buildCitationAppendix(List<Document> documents) {
+        if (documents == null || documents.isEmpty()) {
+            return "";
+        }
+        List<CitationItem> citations = new ArrayList<>();
+        Map<String, Integer> seen = new LinkedHashMap<>();
+        for (Document document : documents) {
+            String source = metadataValue(document, "source", "unknown");
+            String chunkIndex = metadataValue(document, "chunk_index", "-");
+            String key = source + "#" + chunkIndex;
+            if (seen.containsKey(key)) {
+                continue;
+            }
+            seen.put(key, citations.size() + 1);
+            citations.add(new CitationItem(
+                    citations.size() + 1,
+                    source,
+                    chunkIndex,
+                    document.getScore(),
+                    preview(document.getText())
+            ));
+        }
+        if (citations.isEmpty()) {
+            return "";
+        }
+        StringBuilder builder = new StringBuilder("\n\n---\n\n### 参考来源\n\n");
+        for (CitationItem citation : citations) {
+            builder.append("- [来源").append(citation.index()).append("] ")
+                    .append(citation.source())
+                    .append("，分块 ")
+                    .append(citation.chunkIndex());
+            if (citation.score() != null) {
+                builder.append("，相似度 ")
+                        .append(String.format("%.4f", citation.score()));
+            }
+            builder.append("\n  > ")
+                    .append(citation.preview())
+                    .append("\n");
+        }
+        return builder.toString();
+    }
+
+    private String metadataValue(Document document, String key, String defaultValue) {
+        Object value = document.getMetadata().get(key);
+        return value == null ? defaultValue : value.toString();
+    }
+
+    private String preview(String text) {
+        if (text == null || text.isBlank()) {
+            return "";
+        }
+        String compactText = text.replaceAll("\\s+", " ").trim();
+        if (compactText.length() <= 120) {
+            return compactText;
+        }
+        return compactText.substring(0, 120) + "...";
+    }
+
+    private record CitationItem(int index, String source, String chunkIndex, Double score, String preview) {
     }
 
 

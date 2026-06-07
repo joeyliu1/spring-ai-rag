@@ -11,7 +11,6 @@ import org.springframework.util.CollectionUtils;
 
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 public class MetadataAwareQuestionAnswerAdvisor implements BaseAdvisor {
     private static final PromptTemplate DEFAULT_PROMPT_TEMPLATE = new PromptTemplate("""
@@ -23,10 +22,11 @@ public class MetadataAwareQuestionAnswerAdvisor implements BaseAdvisor {
 			{question_answer_context}
 			---------------------
 
-			Given the context and provided history information and not prior knowledge,
-			reply to the user comment. If the answer is not in the context, inform
-			the user that you can't answer the question.
-			""");
+				Given the context and provided history information and not prior knowledge,
+				reply to the user comment. If the answer is not in the context, inform
+				the user that you can't answer the question.
+				When using context from a source, cite it inline with labels like [来源1].
+				""");
     @Override  
     public ChatClientRequest before(ChatClientRequest baseRequest, AdvisorChain advisorChain) {
 
@@ -39,7 +39,7 @@ public class MetadataAwareQuestionAnswerAdvisor implements BaseAdvisor {
 
         if(!CollectionUtils.isEmpty(documents)) {
             String documentContext = documents == null ? ""
-                    : documents.stream().map(doc -> doc.getText()+"\n来源文件:"+doc.getMetadata().getOrDefault("source", "unknown").toString()).collect(Collectors.joining(System.lineSeparator()));
+                    : buildDocumentContext(documents);
 
             // 重新构建prompt，在末尾添加source信息
 
@@ -66,5 +66,20 @@ public class MetadataAwareQuestionAnswerAdvisor implements BaseAdvisor {
         // 优先级最低、因为要保证负责RAG的questionAnswerAdvisor执行完.才能拿到文档信息
         // 为什么不直接设置MAX_VALUE， 因为ChatModelCallAdvisor（负责实际调用AI模型的advisor）也使用了Integer.MAX_VALUE，  如果在他之后，AI对话完成不会执行
         return Integer.MAX_VALUE-1;
+    }
+
+    private String buildDocumentContext(List<Document> documents) {
+        StringBuilder context = new StringBuilder();
+        for (int i = 0; i < documents.size(); i++) {
+            Document document = documents.get(i);
+            Object source = document.getMetadata().getOrDefault("source", "unknown");
+            Object chunkIndex = document.getMetadata().getOrDefault("chunk_index", "-");
+            context.append("[来源").append(i + 1).append("]\n")
+                    .append("文件: ").append(source).append("\n")
+                    .append("分块: ").append(chunkIndex).append("\n")
+                    .append(document.getText())
+                    .append(System.lineSeparator());
+        }
+        return context.toString();
     }
 }
