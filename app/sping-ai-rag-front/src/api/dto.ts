@@ -24,6 +24,17 @@ export interface UploadFileDTO {
   files: File[];
 }
 
+export interface ChunkConfig {
+  chunkSize: number;
+  overlapSize: number;
+  minChunkSize: number;
+  maxChunks: number;
+  minAllowedChunkSize?: number;
+  maxAllowedChunkSize?: number;
+  maxAllowedOverlapSize?: number;
+  maxAllowedChunks?: number;
+}
+
 export interface SelectDto {
   page: number;
   pageSize: number;
@@ -41,11 +52,11 @@ export interface QueryFileDto {
 }
 
 export interface DeleteFileDto {
-  ids: number[];
+  ids: number[] | number | string;
 }
 
 export interface DownloadFileDto {
-  ids: number[];
+  ids: number[] | number | string;
 }
 
 export interface DrawOptions {

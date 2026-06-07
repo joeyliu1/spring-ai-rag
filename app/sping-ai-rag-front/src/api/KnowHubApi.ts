@@ -1,7 +1,7 @@
 import { KnowApi } from "./common";
 import { BASE_URL } from "@/http/config";
 import axios from "axios";
-import { DownloadFileDto,DeleteFileDto, QueryFileDto } from "./dto";
+import { ChunkConfig, DownloadFileDto,DeleteFileDto, QueryFileDto } from "./dto";
 import service from "@/http";
 import handleAuthError from "@/api/authUtils";
 
@@ -48,13 +48,15 @@ fileService.interceptors.response.use(
 );
 
 // 上传知识库接口
-export const uploadFileApi = async (filesList: File[]): Promise<Res> => {
+export const uploadFileApi = async (filesList: File[], chunkConfig?: Partial<ChunkConfig>): Promise<Res> => {
   let formData = new FormData();
   filesList.map((e) => {
     formData.append("file", e);
   });
 
-  return fileService.post(KnowApi.UploadFile, formData);
+  return fileService.post(KnowApi.UploadFile, formData, {
+    params: chunkConfig,
+  });
 };
 
 // 查询所有知识库接口
@@ -64,6 +66,10 @@ export const queryFileApi = async (params: QueryFileDto): Promise<Res> => {
   return service.get(KnowApi.QueryFile, {
     params,
   });
+};
+
+export const queryChunkConfigApi = async (): Promise<Res> => {
+  return service.get(KnowApi.ChunkConfig);
 };
 
 // 删除指定ID列表的知识库

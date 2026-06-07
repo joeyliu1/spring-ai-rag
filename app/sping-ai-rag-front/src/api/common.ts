@@ -4,6 +4,7 @@
 export const enum KnowApi {
   UploadFile = "/knowledge/file/upload",
   QueryFile = "/knowledge/contents",
+  ChunkConfig = "/knowledge/chunk-config",
   DeleteFile = "/knowledge/delete",
   DownloadFile = "/knowledge/download",
 }

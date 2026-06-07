@@ -24,6 +24,66 @@
       </el-upload>
     </div>
 
+    <!-- Chunk Strategy -->
+    <div class="chunk-config-section">
+      <div class="chunk-config-header">
+        <div>
+          <div class="chunk-config-title">
+            <el-icon><Setting /></el-icon>
+            分块策略
+          </div>
+          <div class="chunk-config-meta">
+            递归分块：段落 / 换行 / 中英文标点 / 空格，保留相邻块重叠上下文
+          </div>
+        </div>
+        <el-button size="small" @click="resetChunkConfig" :disabled="isChunkConfigLoading">
+          恢复默认
+        </el-button>
+      </div>
+      <div class="chunk-config-grid" v-loading="isChunkConfigLoading">
+        <div class="chunk-config-item">
+          <span>目标块大小</span>
+          <el-input-number
+            v-model="chunkConfig.chunkSize"
+            :min="chunkConfig.minAllowedChunkSize || 200"
+            :max="chunkConfig.maxAllowedChunkSize || 4000"
+            :step="100"
+            controls-position="right"
+          />
+        </div>
+        <div class="chunk-config-item">
+          <span>重叠大小</span>
+          <el-input-number
+            v-model="chunkConfig.overlapSize"
+            :min="0"
+            :max="Math.floor(chunkConfig.chunkSize / 2)"
+            :step="50"
+            controls-position="right"
+          />
+        </div>
+        <div class="chunk-config-item">
+          <span>最小块大小</span>
+          <el-input-number
+            v-model="chunkConfig.minChunkSize"
+            :min="1"
+            :max="chunkConfig.chunkSize"
+            :step="20"
+            controls-position="right"
+          />
+        </div>
+        <div class="chunk-config-item">
+          <span>最大分块数</span>
+          <el-input-number
+            v-model="chunkConfig.maxChunks"
+            :min="1"
+            :max="chunkConfig.maxAllowedChunks || 20000"
+            :step="500"
+            controls-position="right"
+          />
+        </div>
+      </div>
+    </div>
+
     <!-- Toolbar -->
     <div class="toolbar">
       <div class="toolbar-left">
@@ -73,7 +133,7 @@
         :data="storeFileData"
         border
         v-loading="isLoading"
-        height="calc(100vh - 400px)"
+        height="100%"
         @selection-change="handleSelectionChange"
         class="apple-table"
       >
@@ -137,10 +197,10 @@
 
 <script setup lang="ts">
 import { type UploadUserFile, ElMessage, ElMessageBox } from "element-plus";
-import { UploadFilled, Delete, Download, Upload, Search } from '@element-plus/icons-vue'
-import {uploadFileApi, queryFileApi, deleteFileApi, downloadFileApi} from "@/api/KnowHubApi";
+import { UploadFilled, Delete, Download, Upload, Search, Setting } from '@element-plus/icons-vue'
+import {uploadFileApi, queryFileApi, deleteFileApi, downloadFileApi, queryChunkConfigApi} from "@/api/KnowHubApi";
 import { StoreFile } from "@/api/data";
-import { QueryFileDto } from "@/api/dto";
+import { ChunkConfig, QueryFileDto } from "@/api/dto";
 import { format } from "date-fns";
 
 const storeFileData = ref<StoreFile[]>([]);
@@ -151,8 +211,20 @@ const queryFileDto = ref<QueryFileDto>({
 });
 const isUploading = ref(false);
 const isLoading = ref(false);
+const isChunkConfigLoading = ref(false);
 const storeFileTotal = ref(0);
 const selectedFiles = ref<any[]>([])
+const defaultChunkConfig = ref<ChunkConfig>({
+  chunkSize: 1200,
+  overlapSize: 200,
+  minChunkSize: 80,
+  maxChunks: 10000,
+  minAllowedChunkSize: 200,
+  maxAllowedChunkSize: 4000,
+  maxAllowedOverlapSize: 600,
+  maxAllowedChunks: 20000,
+});
+const chunkConfig = ref<ChunkConfig>({ ...defaultChunkConfig.value });
 
 const loadStoreFileData = () => {
   isLoading.value = true;
@@ -181,7 +253,40 @@ const loadStoreFileData = () => {
     });
 };
 
-const fileList = ref<UploadUserFile[]>();
+const loadChunkConfig = () => {
+  isChunkConfigLoading.value = true;
+  queryChunkConfigApi()
+    .then((res) => {
+      if (res.code === 0) {
+        defaultChunkConfig.value = res.data;
+        chunkConfig.value = { ...res.data };
+      } else {
+        ElMessage({ type: "error", message: res.message });
+      }
+    })
+    .catch((err) => {
+      ElMessage({ type: "error", message: err });
+    })
+    .finally(() => {
+      isChunkConfigLoading.value = false;
+    });
+};
+
+const resetChunkConfig = () => {
+  chunkConfig.value = { ...defaultChunkConfig.value };
+};
+
+const normalizeChunkConfig = () => {
+  const maxOverlap = Math.floor(chunkConfig.value.chunkSize / 2);
+  if (chunkConfig.value.overlapSize > maxOverlap) {
+    chunkConfig.value.overlapSize = maxOverlap;
+  }
+  if (chunkConfig.value.minChunkSize > chunkConfig.value.chunkSize) {
+    chunkConfig.value.minChunkSize = chunkConfig.value.chunkSize;
+  }
+};
+
+const fileList = ref<UploadUserFile[]>([]);
 
 const uploadFile = () => {
   const files: File[] = [];
@@ -200,14 +305,32 @@ const uploadFile = () => {
     }
   }
 
+  if (files.length === 0) {
+    ElMessage({
+      type: "warning",
+      message: "请先选择文件",
+    });
+    return;
+  }
+
+  normalizeChunkConfig();
   isUploading.value = true;
-  uploadFileApi(files)
+  uploadFileApi(files, {
+    chunkSize: chunkConfig.value.chunkSize,
+    overlapSize: chunkConfig.value.overlapSize,
+    minChunkSize: chunkConfig.value.minChunkSize,
+    maxChunks: chunkConfig.value.maxChunks,
+  })
     .then((res) => {
       let code = res.data.code;
       if (code == 0) {
+        const result = res.data.data;
+        const summary = result?.totalChunkCount
+          ? `上传成功，共 ${result.fileCount} 个文件，生成 ${result.totalChunkCount} 个分块`
+          : "文件上传成功";
         ElMessage({
           type: "success",
-          message: res.data.data,
+          message: summary,
         });
         fileList.value = [];
         loadStoreFileData();
@@ -375,6 +498,7 @@ const batchDownload = () => {
 }
 
 onMounted(() => {
+  loadChunkConfig();
   loadStoreFileData();
 });
 </script>
@@ -382,6 +506,7 @@ onMounted(() => {
 <style scoped lang="less">
 .know-hub-container {
   height: 100%;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   gap: 20px;
@@ -445,6 +570,64 @@ onMounted(() => {
   }
 }
 
+.chunk-config-section {
+  padding: 16px 20px;
+  background: var(--apple-card);
+  backdrop-filter: blur(20px);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--apple-border);
+  box-shadow: var(--shadow-sm);
+
+  .chunk-config-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 14px;
+  }
+
+  .chunk-config-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--apple-text-primary);
+    font-size: 15px;
+    font-weight: 600;
+
+    .el-icon {
+      color: var(--apple-blue);
+    }
+  }
+
+  .chunk-config-meta {
+    margin-top: 4px;
+    color: var(--apple-text-secondary);
+    font-size: 12px;
+  }
+
+  .chunk-config-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(150px, 1fr));
+    gap: 12px;
+    min-height: 58px;
+  }
+
+  .chunk-config-item {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+
+    span {
+      color: var(--apple-text-secondary);
+      font-size: 12px;
+    }
+
+    :deep(.el-input-number) {
+      width: 100%;
+    }
+  }
+}
+
 .toolbar {
   display: flex;
   justify-content: space-between;
@@ -483,12 +666,19 @@ onMounted(() => {
 
 .table-section {
   flex: 1;
+  min-height: 360px;
+  display: flex;
+  flex-direction: column;
   background: var(--apple-card);
   backdrop-filter: blur(20px);
   border-radius: var(--radius-lg);
   border: 1px solid var(--apple-border);
   box-shadow: var(--shadow-sm);
   overflow: hidden;
+
+  :deep(.el-table) {
+    flex: 1;
+  }
 
   .action-buttons {
     display: flex;
