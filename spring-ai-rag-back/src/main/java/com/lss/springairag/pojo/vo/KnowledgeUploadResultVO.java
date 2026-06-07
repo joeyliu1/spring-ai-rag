@@ -21,7 +21,7 @@ public class KnowledgeUploadResultVO {
     @Builder
     public static class UploadedFile {
 
-        private Integer fileId;
+        private Long fileId;
 
         private String fileName;
 

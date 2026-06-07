@@ -9,6 +9,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.lss.springairag.common.BaseResponse;
 import com.lss.springairag.common.ErrorCode;
 import com.lss.springairag.common.ResultUtils;
+import com.lss.springairag.context.BaseContext;
 import com.lss.springairag.entity.AliOssFile;
 import com.lss.springairag.entity.KnowledgeChunk;
 import com.lss.springairag.mapper.AliOssFileMapper;
@@ -64,7 +65,7 @@ public class AliOssFileServiceImpl extends ServiceImpl<AliOssFileMapper, AliOssF
     @Override
     public BaseResponse queryPage(QueryFileDTO request) {
         Page<AliOssFile> page = new Page<>(request.getPage(), request.getPageSize());
-        IPage<AliOssFile> fileList = aliOssFileMapper.findByFileNameContaining(page, request.getFileName());
+        IPage<AliOssFile> fileList = aliOssFileMapper.findByFileNameContaining(page, request.getFileName(), currentUserId());
         return ResultUtils.success(fileList);
     }
 
@@ -74,8 +75,15 @@ public class AliOssFileServiceImpl extends ServiceImpl<AliOssFileMapper, AliOssF
         if (CollectionUtils.isEmpty(ids)) {
             return ResultUtils.error(ErrorCode.PARAMS_ERROR, "请选择文件");
         }
-        List<AliOssFile> aliOssFiles = aliOssFileMapper.selectByIds(ids);
-        int count = aliOssFileMapper.deleteBatchIds(ids);
+        Long userId = currentUserId();
+        List<AliOssFile> aliOssFiles = aliOssFileMapper.selectList(new LambdaQueryWrapper<AliOssFile>()
+                .in(AliOssFile::getId, ids)
+                .eq(AliOssFile::getOwnerUserId, userId));
+        if (aliOssFiles.size() != ids.size()) {
+            return ResultUtils.error(ErrorCode.NO_AUTH_ERROR, "只能删除自己的知识库文件");
+        }
+        List<Long> fileIds = aliOssFiles.stream().map(AliOssFile::getId).collect(Collectors.toList());
+        int count = aliOssFileMapper.deleteBatchIds(fileIds);
         if (count == 0) {
             return ResultUtils.error(ErrorCode.OPERATION_ERROR, "删除失败");
         }
@@ -97,7 +105,12 @@ public class AliOssFileServiceImpl extends ServiceImpl<AliOssFileMapper, AliOssF
         if (CollectionUtils.isEmpty(ids)) {
             return ResultUtils.error(ErrorCode.PARAMS_ERROR, "请选择文件");
         }
-        List<AliOssFile> aliOssFiles = aliOssFileMapper.selectByIds(ids);
+        List<AliOssFile> aliOssFiles = aliOssFileMapper.selectList(new LambdaQueryWrapper<AliOssFile>()
+                .in(AliOssFile::getId, ids)
+                .eq(AliOssFile::getOwnerUserId, currentUserId()));
+        if (aliOssFiles.size() != ids.size()) {
+            return ResultUtils.error(ErrorCode.NO_AUTH_ERROR, "只能下载自己的知识库文件");
+        }
         for (AliOssFile aliOssFile : aliOssFiles){
             String url = aliOssFile.getUrl();
             String fileName = extractFileName(url);
@@ -107,7 +120,7 @@ public class AliOssFileServiceImpl extends ServiceImpl<AliOssFileMapper, AliOssF
     }
 
     @Override
-    public void saveChunks(Integer fileId, List<Document> documents) {
+    public void saveChunks(Long fileId, List<Document> documents) {
         if (fileId == null || CollectionUtils.isEmpty(documents)) {
             return;
         }
@@ -134,9 +147,9 @@ public class AliOssFileServiceImpl extends ServiceImpl<AliOssFileMapper, AliOssF
         if (id == null) {
             return ResultUtils.error(ErrorCode.PARAMS_ERROR, "文件 id 不能为空");
         }
-        AliOssFile file = aliOssFileMapper.selectById(id);
+        AliOssFile file = getOwnedFile(id);
         if (file == null) {
-            return ResultUtils.error(ErrorCode.NOT_FOUND_ERROR, "文件不存在");
+            return ResultUtils.error(ErrorCode.NOT_FOUND_ERROR, "文件不存在或无权访问");
         }
         Long chunkCount = knowledgeChunkMapper.selectCount(new LambdaQueryWrapper<KnowledgeChunk>()
                 .eq(KnowledgeChunk::getFileId, file.getId()));
@@ -154,9 +167,9 @@ public class AliOssFileServiceImpl extends ServiceImpl<AliOssFileMapper, AliOssF
         if (id == null) {
             return ResultUtils.error(ErrorCode.PARAMS_ERROR, "文件 id 不能为空");
         }
-        AliOssFile file = aliOssFileMapper.selectById(id);
+        AliOssFile file = getOwnedFile(id);
         if (file == null) {
-            return ResultUtils.error(ErrorCode.NOT_FOUND_ERROR, "文件不存在");
+            return ResultUtils.error(ErrorCode.NOT_FOUND_ERROR, "文件不存在或无权访问");
         }
         int currentPage = page == null || page <= 0 ? 1 : page;
         int currentPageSize = pageSize == null || pageSize <= 0
@@ -180,9 +193,9 @@ public class AliOssFileServiceImpl extends ServiceImpl<AliOssFileMapper, AliOssF
         if (id == null) {
             return ResultUtils.error(ErrorCode.PARAMS_ERROR, "文件 id 不能为空");
         }
-        AliOssFile file = aliOssFileMapper.selectById(id);
+        AliOssFile file = getOwnedFile(id);
         if (file == null) {
-            return ResultUtils.error(ErrorCode.NOT_FOUND_ERROR, "文件不存在");
+            return ResultUtils.error(ErrorCode.NOT_FOUND_ERROR, "文件不存在或无权访问");
         }
         List<KnowledgeChunk> chunks = knowledgeChunkMapper.selectList(new LambdaQueryWrapper<KnowledgeChunk>()
                 .eq(KnowledgeChunk::getFileId, file.getId())
@@ -200,6 +213,10 @@ public class AliOssFileServiceImpl extends ServiceImpl<AliOssFileMapper, AliOssF
         for (KnowledgeChunk chunk : chunks) {
             Map<String, Object> metadata = parseMetadata(chunk.getMetadata());
             metadata.put("source", file.getFileName());
+            metadata.put("owner_user_id", file.getOwnerUserId());
+            if (file.getTeamId() != null) {
+                metadata.put("team_id", file.getTeamId());
+            }
             metadata.put("chunk_index", chunk.getChunkIndex());
             metadata.put("chunk_count", chunks.size());
             metadata.put("chunk_size", StringUtils.hasText(chunk.getContent()) ? chunk.getContent().length() : 0);
@@ -306,7 +323,19 @@ public class AliOssFileServiceImpl extends ServiceImpl<AliOssFileMapper, AliOssF
         }
     }
 
+    private AliOssFile getOwnedFile(Long id) {
+        if (id == null) {
+            return null;
+        }
+        return aliOssFileMapper.selectOne(new LambdaQueryWrapper<AliOssFile>()
+                .eq(AliOssFile::getId, id)
+                .eq(AliOssFile::getOwnerUserId, currentUserId())
+                .last("limit 1"));
+    }
+
+    private Long currentUserId() {
+        return BaseContext.getCurrentId();
+    }
+
 }
-
-
 

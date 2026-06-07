@@ -1,5 +1,6 @@
 package com.lss.springairag.entity;
 
+import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.AllArgsConstructor;
@@ -22,8 +23,8 @@ public class User {
     /**
      * 主键
      */
-    @TableId
-    private Integer id;
+    @TableId(type = IdType.AUTO)
+    private Long id;
 
     /**
      * 姓名

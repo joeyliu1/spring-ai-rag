@@ -9,16 +9,21 @@
             <result property="fileName" column="file_name" />
             <result property="url" column="url" />
             <result property="vectorId" column="vector_id" />
+            <result property="ownerUserId" column="owner_user_id" />
+            <result property="teamId" column="team_id" />
             <result property="createTime" column="create_time" />
             <result property="updateTime" column="update_time" />
     </resultMap>
 
     <sql id="Base_Column_List">
-        id,file_name,url,vector_id,create_time,update_time
+        id,file_name,url,vector_id,owner_user_id,team_id,create_time,update_time
     </sql>
     <select id="findByFileNameContaining" resultType="com.lss.springairag.entity.AliOssFile">
         SELECT * FROM ali_oss_file
-        WHERE file_name LIKE CONCAT('%', #{fileName}, '%')
+        WHERE owner_user_id = #{ownerUserId}
+        <if test="fileName != null and fileName != ''">
+            AND file_name LIKE CONCAT('%', #{fileName}, '%')
+        </if>
         ORDER BY id
     </select>
 </mapper>

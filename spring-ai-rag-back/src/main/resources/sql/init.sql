@@ -18,7 +18,7 @@ CREATE TABLE `vector_store` (
 -- ----------------------------
 DROP TABLE IF EXISTS `tb_user`;
 CREATE TABLE `tb_user` (
-                           `id` INT NOT NULL AUTO_INCREMENT,
+                           `id` BIGINT NOT NULL AUTO_INCREMENT,
                            `name` VARCHAR(255) NOT NULL COMMENT '姓名',
                            `user_name` VARCHAR(255) NOT NULL COMMENT '用户名',
                            `password` VARCHAR(255) NOT NULL COMMENT '密码',
@@ -31,13 +31,13 @@ CREATE TABLE `tb_user` (
                            `create_user` BIGINT COMMENT '创建人',
                            `update_user` BIGINT COMMENT '修改人',
                            PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=666498 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户表';
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户表';
 
 -- ----------------------------
 -- Records of tb_user
 -- ----------------------------
 INSERT INTO `tb_user` (`id`, `name`, `user_name`, `password`, `phone`, `sex`, `id_number`, `status`, `create_time`, `update_time`, `create_user`, `update_user`)
-VALUES (666497, '管理员', 'admin', '21232f297a57a5a743894a0e4a801fc3', '13800138000', '男', '11010519491231002X', 1, '2025-03-03', '2025-03-03', NULL, NULL);
+VALUES (1, '管理员', 'admin', '21232f297a57a5a743894a0e4a801fc3', '13800138000', '男', '11010519491231002X', 1, '2025-03-03', '2025-03-03', NULL, NULL);
 
 
 -- ----------------------------
@@ -49,9 +49,13 @@ CREATE TABLE `ali_oss_file` (
                                 `file_name` VARCHAR(255) COMMENT '文件名',
                                 `url` VARCHAR(500) COMMENT '链接地址',
                                 `vector_id` TEXT COMMENT '该文件分割出的多段向量文本ID',
+                                `owner_user_id` BIGINT COMMENT '文件所有者用户ID',
+                                `team_id` BIGINT COMMENT '团队ID',
                                 `create_time` TIMESTAMP NULL DEFAULT NULL COMMENT '创建时间',
                                 `update_time` TIMESTAMP NULL DEFAULT NULL COMMENT '更新时间',
-                                PRIMARY KEY (`id`)
+                                PRIMARY KEY (`id`),
+                                KEY `idx_ali_oss_file_owner` (`owner_user_id`),
+                                KEY `idx_ali_oss_file_team` (`team_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='阿里云OSS文件表';
 
 
@@ -97,7 +101,7 @@ CREATE TABLE `log_info` (
 -- ----------------------------
 DROP TABLE IF EXISTS `sensitive_word`;
 CREATE TABLE `sensitive_word` (
-                                  `id` INT NOT NULL AUTO_INCREMENT,
+                                  `id` BIGINT NOT NULL AUTO_INCREMENT,
                                   `word` VARCHAR(255) COMMENT '敏感词内容',
                                   `category` VARCHAR(255) COMMENT '敏感词类别',
                                   `status` VARCHAR(50) COMMENT '敏感词状态',
@@ -112,7 +116,7 @@ CREATE TABLE `sensitive_word` (
 -- ----------------------------
 DROP TABLE IF EXISTS `word_frequency`;
 CREATE TABLE `word_frequency` (
-                                  `id` INT NOT NULL AUTO_INCREMENT,
+                                  `id` BIGINT NOT NULL AUTO_INCREMENT,
                                   `word` VARCHAR(255) COMMENT '分词',
                                   `count_num` INT COMMENT '出现频次',
                                   `business_type` VARCHAR(255) COMMENT '业务类型',
@@ -129,7 +133,7 @@ CREATE TABLE `word_frequency` (
 -- ----------------------------
 DROP TABLE IF EXISTS `sensitive_category`;
 CREATE TABLE `sensitive_category` (
-                                      `id` INT NOT NULL AUTO_INCREMENT,
+                                      `id` BIGINT NOT NULL AUTO_INCREMENT,
                                       `category_name` VARCHAR(255) COMMENT '分类名',
                                       `created_time` DATE COMMENT '创建时间',
                                       `update_time` DATE COMMENT '更新时间',

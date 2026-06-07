@@ -38,7 +38,7 @@ public class SensitiveCategoryController {
     // 批量删除接口
     @Operation(summary = "批量删除")
     @DeleteMapping("/batch")
-    public BaseResponse<Boolean> batchDelete(@RequestBody List<Integer> ids) {
+    public BaseResponse<Boolean> batchDelete(@RequestBody List<Long> ids) {
         return ResultUtils.success(sensitiveCategoryService.removeByIds(ids));
     }
 

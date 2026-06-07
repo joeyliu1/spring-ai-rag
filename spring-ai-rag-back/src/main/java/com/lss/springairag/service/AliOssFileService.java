@@ -16,7 +16,7 @@ public interface AliOssFileService extends IService<AliOssFile> {
 
     BaseResponse downloadFiles(List<Long> ids);
 
-    void saveChunks(Integer fileId, List<Document> documents);
+    void saveChunks(Long fileId, List<Document> documents);
 
     BaseResponse queryFileDetail(Long id);
 

@@ -7,6 +7,7 @@ import com.lss.springairag.common.BaseResponse;
 import com.lss.springairag.common.ErrorCode;
 import com.lss.springairag.common.ResultUtils;
 import com.lss.springairag.config.RagChunkProperties;
+import com.lss.springairag.context.BaseContext;
 import com.lss.springairag.entity.AliOssFile;
 import com.lss.springairag.pojo.dto.QueryFileDTO;
 import com.lss.springairag.pojo.vo.KnowledgeUploadResultVO;
@@ -80,6 +81,7 @@ public class KnowledgeController {
         RecursiveChunkSplitter chunkSplitter = new RecursiveChunkSplitter(chunkOptions);
         List<KnowledgeUploadResultVO.UploadedFile> uploadedFiles = new ArrayList<>();
         int totalChunkCount = 0;
+        Long userId = BaseContext.getCurrentId();
 
         // 上传文件
         for (MultipartFile file : files) {
@@ -105,6 +107,7 @@ public class KnowledgeController {
 
                 // 2. 按标题、段落、句子优先递归分块，并保留相邻块重叠上下文
                 List<Document> splitDocuments = chunkSplitter.split(documents, originalFilename);
+                splitDocuments.forEach(document -> document.getMetadata().put("owner_user_id", userId));
                 // 3. 向量化
                 // 4. 保存向量 自动调用向量模型向量化方法
                 vectorStore.add(splitDocuments);
@@ -115,6 +118,7 @@ public class KnowledgeController {
                         .fileName(originalFilename)
                         .vectorId(JSON.toJSONString(splitDocuments.stream().map(Document::getId).collect(Collectors.toList())))
                         .url(url)
+                        .ownerUserId(userId)
                         .createTime(new Date(currMillis))
                         .updateTime(new Date(currMillis))
                         .build();

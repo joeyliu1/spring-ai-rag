@@ -42,13 +42,13 @@ public class SensitiveWordController {
 
     @Operation(summary = "删除敏感词")
     @DeleteMapping("/{id}")
-    public boolean deleteSensitiveWord(@PathVariable Integer id) {
+    public boolean deleteSensitiveWord(@PathVariable Long id) {
         return sensitiveWordService.removeById(id);
     }
 
     @Operation(summary = "批量删除敏感词")
     @PostMapping("/batch")
-    public BaseResponse deleteSensitiveWords(@RequestBody List<Integer> ids) {
+    public BaseResponse deleteSensitiveWords(@RequestBody List<Long> ids) {
         boolean b = sensitiveWordService.removeByIds(ids);
         if (b){
             return ResultUtils.success("删除成功");

@@ -14,7 +14,7 @@ public class KnowledgeChunk {
     @TableId(type = IdType.AUTO)
     private Long id;
 
-    private Integer fileId;
+    private Long fileId;
 
     private String documentId;
 

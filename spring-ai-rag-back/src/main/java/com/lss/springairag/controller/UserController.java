@@ -156,7 +156,7 @@ public class UserController {
      */
     @PostMapping("/status/{status}")
     @Operation(summary = "status", description = "启用禁用账号")
-    public BaseResponse startOrStop(@PathVariable Integer status, Integer id) {
+    public BaseResponse startOrStop(@PathVariable Integer status, Long id) {
         log.info("启用禁用员工账号：{},{}", status, id);
         userService.startOrStop(status, id);
         return ResultUtils.success("禁用成功");

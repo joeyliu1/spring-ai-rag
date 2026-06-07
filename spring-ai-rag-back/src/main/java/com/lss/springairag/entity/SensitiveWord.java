@@ -1,5 +1,6 @@
 package com.lss.springairag.entity;
 
+import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
@@ -14,8 +15,8 @@ public class SensitiveWord {
     /**
      * id
      */
-    @TableId
-    private Integer id;
+    @TableId(type = IdType.AUTO)
+    private Long id;
 
     /**
      * 敏感词内容

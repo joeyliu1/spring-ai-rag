@@ -5,14 +5,15 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.lss.springairag.entity.AliOssFile;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 
 
 @Mapper
 public interface AliOssFileMapper extends BaseMapper<AliOssFile> {
 
-    IPage<AliOssFile> findByFileNameContaining(Page<AliOssFile> page, String fileName);
+    IPage<AliOssFile> findByFileNameContaining(Page<AliOssFile> page,
+                                               @Param("fileName") String fileName,
+                                               @Param("ownerUserId") Long ownerUserId);
 }
-
-
 
 

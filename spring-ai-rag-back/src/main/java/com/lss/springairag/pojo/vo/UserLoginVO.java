@@ -11,7 +11,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class UserLoginVO {
 
-    private Integer id;
+    private Long id;
 
     private String userName;
 

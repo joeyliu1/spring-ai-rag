@@ -11,7 +11,7 @@ public class KnowledgeChunkVO {
 
     private Long id;
 
-    private Integer fileId;
+    private Long fileId;
 
     private String documentId;
 

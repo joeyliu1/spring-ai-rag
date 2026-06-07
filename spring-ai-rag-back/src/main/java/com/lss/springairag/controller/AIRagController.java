@@ -125,7 +125,7 @@ public class AIRagController {
                     .query(message)
                     .similarityThreshold(0.1d).topK(5)
                     // source in ['xxx.pdf','xxxx']
-                    .filterExpression("source in " + JSON.toJSONString(sources))
+                    .filterExpression("owner_user_id == " + userId + " && source in " + JSON.toJSONString(sources))
                     .build();
             sourceDocuments = vectorStore.similaritySearch(searchRequest);
 
