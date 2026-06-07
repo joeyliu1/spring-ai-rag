@@ -9,7 +9,6 @@ import com.lss.springairag.common.ApplicationConstant;
 import com.lss.springairag.context.BaseContext;
 import com.lss.springairag.entity.SensitiveWord;
 import com.lss.springairag.service.SensitiveWordService;
-import com.lss.springairag.tools.RagTool;
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
@@ -57,8 +56,7 @@ public class AIRagController {
 
 
     public AIRagController(ChatModel chatModel, ChatMemory chatMemory,
-                           VectorStore vectorStore,
-                           RagTool ragTool) {
+                           VectorStore vectorStore) {
         this.chatModel = chatModel;
         this.chatClient = ChatClient.builder(chatModel)
                 // 隐式
@@ -69,7 +67,6 @@ public class AIRagController {
                         SimpleLoggerAdvisor.builder().build(),
                         new MetadataAwareQuestionAnswerAdvisor()
                 )
-                .defaultTools(ragTool)
                 .build();
         this.vectorStore = vectorStore;
     }
