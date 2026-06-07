@@ -56,6 +56,28 @@ CREATE TABLE `ali_oss_file` (
 
 
 -- ----------------------------
+-- Table structure for knowledge_chunk
+-- ----------------------------
+DROP TABLE IF EXISTS `knowledge_chunk`;
+CREATE TABLE `knowledge_chunk` (
+                                     `id` BIGINT NOT NULL AUTO_INCREMENT,
+                                     `file_id` BIGINT NOT NULL COMMENT '知识库文件ID',
+                                     `document_id` VARCHAR(255) COMMENT '向量文档ID',
+                                     `source` VARCHAR(255) COMMENT '来源文件名',
+                                     `chunk_index` INT COMMENT '分块序号',
+                                     `chunk_count` INT COMMENT '文件分块总数',
+                                     `chunk_size` INT COMMENT '分块字符数',
+                                     `content` MEDIUMTEXT COMMENT '分块内容',
+                                     `metadata` JSON COMMENT '分块元数据',
+                                     `create_time` TIMESTAMP NULL DEFAULT NULL COMMENT '创建时间',
+                                     `update_time` TIMESTAMP NULL DEFAULT NULL COMMENT '更新时间',
+                                     PRIMARY KEY (`id`),
+                                     INDEX `idx_knowledge_chunk_file_id` (`file_id`),
+                                     INDEX `idx_knowledge_chunk_document_id` (`document_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='知识库分块表';
+
+
+-- ----------------------------
 -- Table structure for log_info
 -- ----------------------------
 DROP TABLE IF EXISTS `log_info`;

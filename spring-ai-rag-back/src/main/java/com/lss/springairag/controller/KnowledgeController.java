@@ -99,13 +99,15 @@ public class KnowledgeController {
 
                 // 持久化到数据库
                 long currMillis = System.currentTimeMillis();
-                aliOssFileService.save(AliOssFile.builder()
+                AliOssFile aliOssFile = AliOssFile.builder()
                         .fileName(originalFilename)
                         .vectorId(JSON.toJSONString(splitDocuments.stream().map(Document::getId).collect(Collectors.toList())))
                         .url(url)
                         .createTime(new Date(currMillis))
                         .updateTime(new Date(currMillis))
-                        .build());
+                        .build();
+                aliOssFileService.save(aliOssFile);
+                aliOssFileService.saveChunks(aliOssFile.getId(), splitDocuments);
 
             }
             catch (IOException e) {
@@ -128,6 +130,26 @@ public class KnowledgeController {
             return ResultUtils.error(ErrorCode.PARAMS_ERROR,"page 或 pageSize为空");
         }
         return aliOssFileService.queryPage(request);
+    }
+
+    @Operation(summary = "detail", description = "文件详情")
+    @GetMapping("/{id}")
+    public BaseResponse queryFileDetail(@PathVariable Long id) {
+        return aliOssFileService.queryFileDetail(id);
+    }
+
+    @Operation(summary = "chunks", description = "文件分块预览")
+    @GetMapping("/{id}/chunks")
+    public BaseResponse queryFileChunks(@PathVariable Long id,
+                                        @RequestParam(required = false) Integer page,
+                                        @RequestParam(required = false) Integer pageSize) {
+        return aliOssFileService.queryFileChunks(id, page, pageSize);
+    }
+
+    @Operation(summary = "reindex", description = "重建文件向量索引")
+    @PostMapping("/{id}/reindex")
+    public BaseResponse rebuildFileIndex(@PathVariable Long id) {
+        return aliOssFileService.rebuildIndex(id);
     }
 
     @Operation(summary = "delete",description = "文件删除")
