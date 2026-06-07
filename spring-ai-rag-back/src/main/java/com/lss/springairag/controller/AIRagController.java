@@ -9,6 +9,7 @@ import com.lss.springairag.common.ApplicationConstant;
 import com.lss.springairag.context.BaseContext;
 import com.lss.springairag.pojo.vo.SensitiveAuditResult;
 import com.lss.springairag.service.SensitiveAuditService;
+import com.lss.springairag.service.WordFrequencyService;
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
@@ -49,6 +50,9 @@ public class AIRagController {
     private SensitiveAuditService sensitiveAuditService;
 
     @Autowired
+    private WordFrequencyService wordFrequencyService;
+
+    @Autowired
     private DashScopeRerankModel dashScopeRerankModel;
 
     private ChatModel chatModel;
@@ -86,6 +90,7 @@ public class AIRagController {
         if (auditResult.isBlocked()) {
             return Flux.just(auditResult.getBlockMessage());
         }
+        wordFrequencyService.recordQuestion(message, "rag_chat");
 
         // 检查是否是聚合查询   router方式
        /*boolean isSql= chatClient.prompt()

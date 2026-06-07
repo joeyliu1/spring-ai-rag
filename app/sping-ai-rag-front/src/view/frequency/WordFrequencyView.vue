@@ -2,6 +2,21 @@
   <div class="word-frequency">
     <el-card class="box-card">
       <div class="chart-header">
+        <el-date-picker
+          v-model="dateRange"
+          type="daterange"
+          range-separator="至"
+          start-placeholder="开始日期"
+          end-placeholder="结束日期"
+          value-format="YYYY-MM-DD"
+          :clearable="true"
+          @change="loadWordFrequencyData"
+        />
+        <el-select v-model="businessType" placeholder="问答场景" clearable @change="loadWordFrequencyData">
+          <el-option label="全部场景" value="" />
+          <el-option label="普通聊天" value="chat" />
+          <el-option label="RAG 问答" value="rag_chat" />
+        </el-select>
         <el-button type="primary" @click="loadWordFrequencyData">刷新数据</el-button>
         <el-button type="danger" @click="handleClean">清空数据</el-button>
       </div>
@@ -58,7 +73,7 @@ import { ref, onMounted, onUnmounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import * as echarts from 'echarts'
 import 'echarts-wordcloud'
-import { queryFrequencyApi, cleanFrequencyApi, listFrequencyApi } from '@/api/FrequencyApi'
+import { cleanFrequencyApi, listFrequencyApi } from '@/api/FrequencyApi'
 
 // 图表引用
 const wordCloudRef = ref<HTMLElement | null>(null)
@@ -75,6 +90,8 @@ const charts = ref<{[key: string]: echarts.ECharts | null}>({
 })
 
 const isLoading = ref(false)
+const dateRange = ref<[string, string] | null>(null)
+const businessType = ref('')
 
 // 初始化所有图表
 const initCharts = () => {
@@ -98,14 +115,20 @@ const loadWordFrequencyData = async () => {
   isLoading.value = true
   
   try {
-    const response = await listFrequencyApi()
+    const response = await listFrequencyApi({
+      startDate: dateRange.value?.[0],
+      endDate: dateRange.value?.[1],
+      businessType: businessType.value || undefined
+    })
     
     if (response.code === 0 && response.data) {
-      const data = response.data.map((item: any) => ({
+      const rawData = response.data.map((item: any) => ({
         name: item.word,
         value: item.countNum,
-        time: item.updateTime
+        businessType: item.businessType,
+        date: formatDate(item.createTime)
       }))
+      const data = aggregateByWord(rawData)
 
       // 设置词云图
       const wordCloudOption = {
@@ -228,11 +251,12 @@ const loadWordFrequencyData = async () => {
         }]
       }
 
-      // 设置趋势图（取TOP5词的最近趋势）
+      // 设置趋势图（取TOP5词的真实每日趋势）
       const top5Words = [...data]
         .sort((a, b) => b.value - a.value)
         .slice(0, 5)
         .map(item => item.name)
+      const trendDates = buildTrendDates(rawData)
 
       const lineOption = {
         tooltip: {
@@ -250,7 +274,7 @@ const loadWordFrequencyData = async () => {
         xAxis: {
           type: 'category',
           boundaryGap: false,
-          data: ['最近7天', '最近6天', '最近5天', '最近4天', '最近3天', '最近2天', '今天']
+          data: trendDates
         },
         yAxis: {
           type: 'value'
@@ -258,10 +282,7 @@ const loadWordFrequencyData = async () => {
         series: top5Words.map(word => ({
           name: word,
           type: 'line',
-          data: Array(7).fill(null).map(() => 
-            Math.floor(data.find(item => item.name === word)?.value * Math.random() * 0.5 + 
-              data.find(item => item.name === word)?.value * 0.5)
-          )
+          data: trendDates.map(date => sumWordByDate(rawData, word, date))
         }))
       }
 
@@ -279,6 +300,48 @@ const loadWordFrequencyData = async () => {
   } finally {
     isLoading.value = false
   }
+}
+
+const aggregateByWord = (rawData: Array<{ name: string; value: number; date: string }>) => {
+  const wordMap = new Map<string, number>()
+  rawData.forEach(item => {
+    wordMap.set(item.name, (wordMap.get(item.name) || 0) + item.value)
+  })
+  return Array.from(wordMap.entries()).map(([name, value]) => ({ name, value }))
+}
+
+const buildTrendDates = (rawData: Array<{ date: string }>) => {
+  const dates = Array.from(new Set(rawData.map(item => item.date).filter(Boolean))).sort()
+  if (dates.length > 0) {
+    return dates.slice(-7)
+  }
+  return getLastSevenDays()
+}
+
+const sumWordByDate = (
+  rawData: Array<{ name: string; value: number; date: string }>,
+  word: string,
+  date: string
+) => {
+  return rawData
+    .filter(item => item.name === word && item.date === date)
+    .reduce((sum, item) => sum + item.value, 0)
+}
+
+const formatDate = (value: string) => {
+  if (!value) return ''
+  return value.slice(0, 10)
+}
+
+const getLastSevenDays = () => {
+  const dates: string[] = []
+  const today = new Date()
+  for (let i = 6; i >= 0; i--) {
+    const date = new Date(today)
+    date.setDate(today.getDate() - i)
+    dates.push(date.toISOString().slice(0, 10))
+  }
+  return dates
 }
 
 // 清空数据
@@ -347,9 +410,17 @@ onUnmounted(() => {
 
   .chart-header {
     margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
     
     .el-button {
-      margin-right: 10px;
+      margin-right: 0;
+    }
+
+    .el-select {
+      width: 140px;
     }
   }
 

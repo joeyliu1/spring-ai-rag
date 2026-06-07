@@ -118,7 +118,9 @@ CREATE TABLE `word_frequency` (
                                   `business_type` VARCHAR(255) COMMENT '业务类型',
                                   `create_time` DATE COMMENT '创建时间',
                                   `update_time` DATE COMMENT '更新时间',
-                                  PRIMARY KEY (`id`)
+                                  PRIMARY KEY (`id`),
+                                  KEY `idx_word_frequency_day` (`word`, `business_type`, `create_time`),
+                                  KEY `idx_word_frequency_create_time` (`create_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='词频统计表';
 
 

@@ -13,6 +13,8 @@ export interface FrequencyQueryParams {
   word?: string;
   businessType?: string;
   countNumMin?: number;
+  startDate?: string;
+  endDate?: string;
 }
 
 // 词频信息接口
@@ -32,9 +34,13 @@ export const queryFrequencyApi = async (params: FrequencyQueryParams): Promise<R
 
 // 清空词频数据
 export const cleanFrequencyApi = async (): Promise<Res> => {
-  return service.post(FrequencyApi.Clean);
+  return service.delete(FrequencyApi.Clean);
 };
 
-export const listFrequencyApi = async (): Promise<Res> => {
-  return service.get(FrequencyApi.List);
+export const listFrequencyApi = async (params?: {
+  startDate?: string;
+  endDate?: string;
+  businessType?: string;
+}): Promise<Res> => {
+  return service.get(FrequencyApi.List, { params });
 };

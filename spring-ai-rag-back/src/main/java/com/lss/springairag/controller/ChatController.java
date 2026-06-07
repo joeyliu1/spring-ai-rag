@@ -5,6 +5,7 @@ import com.lss.springairag.common.ApplicationConstant;
 import com.lss.springairag.context.BaseContext;
 import com.lss.springairag.pojo.vo.SensitiveAuditResult;
 import com.lss.springairag.service.SensitiveAuditService;
+import com.lss.springairag.service.WordFrequencyService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
@@ -31,6 +32,9 @@ public class ChatController {
     @Autowired
     private SensitiveAuditService sensitiveAuditService;
 
+    @Autowired
+    private WordFrequencyService wordFrequencyService;
+
     public ChatController(ChatClient.Builder builder, ChatMemory chatMemory) {
 
         this.chatClient = builder
@@ -53,6 +57,7 @@ public class ChatController {
         if (inputAudit.isBlocked()) {
             return Flux.just(inputAudit.getBlockMessage());
         }
+        wordFrequencyService.recordQuestion(message, "chat");
 
         Long userId = BaseContext.getCurrentId();
         Flux<String> content = chatClient.prompt()

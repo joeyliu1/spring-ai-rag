@@ -1,22 +1,20 @@
 package com.lss.springairag.controller;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.lss.springairag.common.ApplicationConstant;
 import com.lss.springairag.common.BaseResponse;
 import com.lss.springairag.common.PageResult;
 import com.lss.springairag.common.ResultUtils;
+import com.lss.springairag.entity.WordFrequency;
 import com.lss.springairag.pojo.dto.WordFrequencyPageQueryDTO;
 import com.lss.springairag.service.WordFrequencyService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 
 @Tag(name = "WordFrequencyController", description = "分词统计控制器")
@@ -26,13 +24,6 @@ import java.util.concurrent.TimeUnit;
 public class WordFrequencyController {
     @Autowired
     private WordFrequencyService wordFrequencyService;
-
-    @Autowired
-    private RedisTemplate<String, Object> redisTemplate;
-
-    @Autowired
-    private ObjectMapper objectMapper;
-
 
     // 分页条件查询
     @PostMapping("/page")
@@ -53,27 +44,10 @@ public class WordFrequencyController {
 
 
     @GetMapping("/getList")
-    public BaseResponse<Object> getList() throws JsonProcessingException {
-        String cacheKey = "wordFrequencyList";
-        String cachedListStr = (String) redisTemplate.opsForValue().get(cacheKey);
-        if (cachedListStr != null) {
-            try {
-                Object cachedList = objectMapper.readValue(cachedListStr, List.class);
-                log.info("从 Redis 缓存中获取数据");
-                return ResultUtils.success(cachedList);
-            } catch (Exception e) {
-                log.error("Redis 缓存解析失败", e);
-            }
-        }
-
-        Object dataList = wordFrequencyService.list();
-
-        String dataListJson = objectMapper.writeValueAsString(dataList);
-        redisTemplate.opsForValue().set(cacheKey, dataListJson);
-        redisTemplate.expire(cacheKey, 5, TimeUnit.MINUTES);
-
-        return ResultUtils.success(dataList);
+    @Operation(summary = "getList", description = "查询真实问答热词，支持日期范围")
+    public BaseResponse<List<WordFrequency>> getList(@RequestParam(required = false) LocalDate startDate,
+                                                     @RequestParam(required = false) LocalDate endDate,
+                                                     @RequestParam(required = false) String businessType) {
+        return ResultUtils.success(wordFrequencyService.listHotWords(startDate, endDate, businessType));
     }
-
-
 }
