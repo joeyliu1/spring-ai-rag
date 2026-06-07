@@ -8,6 +8,7 @@ import com.lss.springairag.common.ErrorCode;
 import com.lss.springairag.common.ResultUtils;
 import com.lss.springairag.entity.AliOssFile;
 import com.lss.springairag.pojo.dto.QueryFileDTO;
+import com.lss.springairag.rag.RecursiveChunkSplitter;
 import com.lss.springairag.service.AliOssFileService;
 import com.lss.springairag.utils.AliOssUtil;
 import io.swagger.v3.oas.annotations.Operation;
@@ -15,7 +16,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.reader.tika.TikaDocumentReader;
-import org.springframework.ai.transformer.splitter.TokenTextSplitter;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
@@ -41,7 +41,7 @@ public class KnowledgeController {
     private AliOssUtil aliOssUtil;
 
     @Autowired
-    private TokenTextSplitter tokenTextSplitter;
+    private RecursiveChunkSplitter recursiveChunkSplitter;
 
 
 
@@ -91,9 +91,8 @@ public class KnowledgeController {
 
 
 
-                //documents.forEach(document -> {document.getMetadata().put("source",originalFilename)});
-                 // 2. 分词
-                List<Document> splitDocuments = tokenTextSplitter.apply(documents);
+                // 2. 按标题、段落、句子优先递归分块，并保留相邻块重叠上下文
+                List<Document> splitDocuments = recursiveChunkSplitter.split(documents, originalFilename);
                 // 3. 向量化
                 // 4. 保存向量 自动调用向量模型向量化方法
                 vectorStore.add(splitDocuments);

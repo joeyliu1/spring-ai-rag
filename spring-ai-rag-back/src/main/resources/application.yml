@@ -69,6 +69,12 @@ aliyun:
     bucket-name: lss-rag
 
 lss:
+  rag:
+    chunk:
+      chunk-size: 1200
+      overlap-size: 200
+      min-chunk-size: 80
+      max-chunks: 10000
   jwt:
     # 设置jwt签名加密时使用的秘钥
     admin-secret-key: lss_jwt_secret_key_for_admin_access_256_bits_required
