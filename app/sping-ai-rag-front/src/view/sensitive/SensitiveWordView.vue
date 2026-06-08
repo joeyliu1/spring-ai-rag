@@ -27,9 +27,9 @@
         >
           <el-table-column type="selection" width="55" />
           <el-table-column prop="word" label="敏感词" width="180" />
-          <el-table-column prop="category" label="类别" width="120">
+          <el-table-column prop="categoryName" label="类别" width="140">
             <template #default="scope">
-              <el-tag>{{ scope.row.category === '1' ? '违禁词' : '其他' }}</el-tag>
+              <el-tag>{{ scope.row.categoryName || '未分类' }}</el-tag>
             </template>
           </el-table-column>
           <el-table-column prop="status" label="状态" width="120">
@@ -78,10 +78,19 @@
         <el-form-item label="敏感词" prop="word">
           <el-input v-model="sensitiveForm.word" placeholder="请输入敏感词" />
         </el-form-item>
-        <el-form-item label="类别" prop="category">
-          <el-select v-model="sensitiveForm.category" placeholder="请选择类别">
-            <el-option label="违禁词" value="1" />
-            <el-option label="其他" value="2" />
+        <el-form-item label="类别" prop="categoryId">
+          <el-select
+            v-model="sensitiveForm.categoryId"
+            placeholder="请选择类别"
+            filterable
+            style="width: 100%"
+          >
+            <el-option
+              v-for="category in enabledCategoryList"
+              :key="category.id"
+              :label="category.categoryName"
+              :value="category.id"
+            />
           </el-select>
         </el-form-item>
       </el-form>
@@ -96,17 +105,20 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
 import { 
   querySensitiveApi, 
   addSensitiveApi, 
   batchDeleteSensitiveApi,
+  queryCategoryListApi,
+  type CategoryInfo,
   type SensitiveInfo 
 } from '@/api/SensitiveApi'
 
 const sensitiveList = ref<SensitiveInfo[]>([])
+const categoryList = ref<CategoryInfo[]>([])
 const total = ref(0)
 const selectedIds = ref<number[]>([])
 const dialogVisible = ref(false)
@@ -122,17 +134,34 @@ const queryParams = ref({
 // 表单数据
 const sensitiveForm = ref({
   word: '',
-  category: '1'
+  categoryId: null as number | null
 })
+
+const enabledCategoryList = computed(() => categoryList.value.filter(category => category.status === '1'))
 
 // 表单验证规则
 const formRules: FormRules = {
   word: [
     { required: true, message: '请输入敏感词', trigger: 'blur' }
   ],
-  category: [
+  categoryId: [
     { required: true, message: '请选择类别', trigger: 'change' }
   ]
+}
+
+// 加载分类列表
+const loadCategoryList = async () => {
+  try {
+    const res = await queryCategoryListApi()
+    if (res.code === 0) {
+      categoryList.value = res.data || []
+    } else {
+      ElMessage.error(res.message || '获取分类列表失败')
+    }
+  } catch (error) {
+    console.error('获取分类列表错误:', error)
+    ElMessage.error('获取分类列表失败')
+  }
 }
 
 // 加载敏感词列表
@@ -167,7 +196,7 @@ const handleSelectionChange = (selection: SensitiveInfo[]) => {
 const handleAdd = () => {
   sensitiveForm.value = {
     word: '',
-    category: '1'
+    categoryId: enabledCategoryList.value[0]?.id ?? null
   }
   dialogVisible.value = true
 }
@@ -179,7 +208,14 @@ const submitForm = async () => {
   await formRef.value.validate(async (valid) => {
     if (valid) {
       try {
-        const res = await addSensitiveApi(sensitiveForm.value)
+        if (sensitiveForm.value.categoryId === null) {
+          ElMessage.error('请选择类别')
+          return
+        }
+        const res = await addSensitiveApi({
+          word: sensitiveForm.value.word,
+          categoryId: sensitiveForm.value.categoryId
+        })
         if (res.code === 0) {
           ElMessage.success('添加成功')
           dialogVisible.value = false
@@ -244,6 +280,7 @@ const handleCurrentChange = (val: number) => {
 }
 
 onMounted(() => {
+  loadCategoryList()
   loadSensitiveList()
 })
 </script>

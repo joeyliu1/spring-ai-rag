@@ -97,17 +97,36 @@ CREATE TABLE `log_info` (
 
 
 -- ----------------------------
--- Table structure for sensitive_word
+-- Table structure for sensitive_category
 -- ----------------------------
 DROP TABLE IF EXISTS `sensitive_word`;
+DROP TABLE IF EXISTS `sensitive_category`;
+CREATE TABLE `sensitive_category` (
+                                      `id` BIGINT NOT NULL AUTO_INCREMENT,
+                                      `category_name` VARCHAR(255) COMMENT '分类名',
+                                      `created_time` DATE COMMENT '创建时间',
+                                      `update_time` DATE COMMENT '更新时间',
+                                      `status` VARCHAR(50) COMMENT '状态',
+                                      PRIMARY KEY (`id`),
+                                      UNIQUE KEY `uk_sensitive_category_name` (`category_name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='敏感词分类表';
+
+
+-- ----------------------------
+-- Table structure for sensitive_word
+-- ----------------------------
 CREATE TABLE `sensitive_word` (
                                   `id` BIGINT NOT NULL AUTO_INCREMENT,
                                   `word` VARCHAR(255) COMMENT '敏感词内容',
-                                  `category` VARCHAR(255) COMMENT '敏感词类别',
+                                  `category_id` BIGINT COMMENT '敏感词分类ID',
                                   `status` VARCHAR(50) COMMENT '敏感词状态',
                                   `created_at` VARCHAR(50) COMMENT '创建时间戳',
                                   `updated_at` VARCHAR(50) COMMENT '更新时间戳',
-                                  PRIMARY KEY (`id`)
+                                  PRIMARY KEY (`id`),
+                                  KEY `idx_sensitive_word_category_id` (`category_id`),
+                                  CONSTRAINT `fk_sensitive_word_category`
+                                      FOREIGN KEY (`category_id`) REFERENCES `sensitive_category` (`id`)
+                                      ON DELETE RESTRICT ON UPDATE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='敏感词表';
 
 
@@ -126,20 +145,6 @@ CREATE TABLE `word_frequency` (
                                   KEY `idx_word_frequency_day` (`word`, `business_type`, `create_time`),
                                   KEY `idx_word_frequency_create_time` (`create_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='词频统计表';
-
-
--- ----------------------------
--- Table structure for sensitive_category
--- ----------------------------
-DROP TABLE IF EXISTS `sensitive_category`;
-CREATE TABLE `sensitive_category` (
-                                      `id` BIGINT NOT NULL AUTO_INCREMENT,
-                                      `category_name` VARCHAR(255) COMMENT '分类名',
-                                      `created_time` DATE COMMENT '创建时间',
-                                      `update_time` DATE COMMENT '更新时间',
-                                      `status` VARCHAR(50) COMMENT '状态',
-                                      PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='敏感词分类表';
 
 
 -- ----------------------------

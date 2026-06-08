@@ -15,4 +15,41 @@
     <sql id="Base_Column_List">
         id,category_name,created_time,update_time,status
     </sql>
+
+    <resultMap id="SensitiveCategoryVOMap" type="com.lss.springairag.pojo.vo.SensitiveCategoryVO">
+        <id property="id" column="id" />
+        <result property="categoryName" column="category_name" />
+        <result property="createdTime" column="created_time" />
+        <result property="updateTime" column="update_time" />
+        <result property="status" column="status" />
+        <result property="wordCount" column="word_count" />
+    </resultMap>
+
+    <select id="selectPageWithWordCount" resultMap="SensitiveCategoryVOMap">
+        SELECT
+            sc.id,
+            sc.category_name,
+            sc.created_time,
+            sc.update_time,
+            sc.status,
+            COUNT(sw.id) AS word_count
+        FROM sensitive_category sc
+        LEFT JOIN sensitive_word sw ON sw.category_id = sc.id
+        GROUP BY sc.id, sc.category_name, sc.created_time, sc.update_time, sc.status
+        ORDER BY sc.id ASC
+    </select>
+
+    <select id="selectListWithWordCount" resultMap="SensitiveCategoryVOMap">
+        SELECT
+            sc.id,
+            sc.category_name,
+            sc.created_time,
+            sc.update_time,
+            sc.status,
+            COUNT(sw.id) AS word_count
+        FROM sensitive_category sc
+        LEFT JOIN sensitive_word sw ON sw.category_id = sc.id
+        GROUP BY sc.id, sc.category_name, sc.created_time, sc.update_time, sc.status
+        ORDER BY sc.id ASC
+    </select>
 </mapper>

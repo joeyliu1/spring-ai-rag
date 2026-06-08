@@ -2,9 +2,6 @@ import { fetchEventSource } from "@microsoft/fetch-event-source";
 import {BASE_URL} from "@/http/config.ts";
 import service from "@/http";
 
-class FatalError extends Error {}
-class RetriableError extends Error {}
-
 type ResultCallBack = (e: any | null) => void;
 
 const BaseUrl = BASE_URL;

@@ -7,6 +7,7 @@ export const SensitiveApi = {
   BatchDelete: "/sensitive/batch",
   CategoryAdd: "/category/add",
   CategoryPage: "/category/page",
+  CategoryList: "/category/list",
   CategoryBatchDelete: "/category/batch",
   CategoryUpdate: "/category/update"
 };
@@ -14,7 +15,8 @@ export const SensitiveApi = {
 export interface SensitiveInfo {
   id: number;
   word: string;
-  category: string;
+  categoryId: number;
+  categoryName: string;
   status: string;
   createdAt: string;
   updatedAt: string;
@@ -22,7 +24,7 @@ export interface SensitiveInfo {
 
 export interface SensitiveAddDto {
   word: string;
-  category: string;
+  categoryId: number;
 }
 
 // 敏感词分类信息接口
@@ -32,6 +34,7 @@ export interface CategoryInfo {
   createdTime: string;
   updateTime: string;
   status: string;
+  wordCount?: number;
 }
 
 // 更新分类信息接口
@@ -63,6 +66,11 @@ export const addCategoryApi = async (data: { categoryName: string }): Promise<Re
 // 分页查询敏感词分类
 export const queryCategoryPageApi = async (params: { page: number; size: number }): Promise<Res> => {
   return service.get(SensitiveApi.CategoryPage, { params });
+};
+
+// 查询全部敏感词分类
+export const queryCategoryListApi = async (): Promise<Res> => {
+  return service.get(SensitiveApi.CategoryList);
 };
 
 // 批量删除敏感词分类

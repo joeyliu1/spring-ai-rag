@@ -27,6 +27,11 @@
         >
           <el-table-column type="selection" width="55" />
           <el-table-column prop="categoryName" label="分类名称" width="180"/>
+          <el-table-column prop="wordCount" label="关联敏感词数" width="140">
+            <template #default="scope">
+              <el-tag type="info">{{ scope.row.wordCount ?? 0 }}</el-tag>
+            </template>
+          </el-table-column>
           <el-table-column prop="status" label="状态" width="100">
             <template #default="scope">
               <el-tag :type="scope.row.status === '1' ? 'success' : 'danger'">
@@ -39,9 +44,9 @@
           <el-table-column label="操作" width="200" fixed="right">
             <template #default="scope">
               <el-button type="primary" size="small" @click="handleEdit(scope.row)">编辑</el-button>
-              <el-button type="danger" size="small" @click="handleDelete(scope.row)">删除</el-button>
-            </template>
-          </el-table-column>
+                <el-button type="danger" size="small" @click="handleDelete(scope.row)">删除</el-button>
+              </template>
+            </el-table-column>
         </el-table>
       </div>
 

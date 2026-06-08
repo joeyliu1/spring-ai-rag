@@ -24,9 +24,9 @@ public class SensitiveWord {
     private String word;
 
     /**
-     * 敏感词类别
+     * 敏感词分类ID
      */
-    private String category;
+    private Long categoryId;
 
     /**
      * 敏感词状态

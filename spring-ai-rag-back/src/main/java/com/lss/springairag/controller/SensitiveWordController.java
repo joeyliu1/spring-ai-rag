@@ -6,6 +6,8 @@ import com.lss.springairag.common.ApplicationConstant;
 import com.lss.springairag.common.BaseResponse;
 import com.lss.springairag.common.ResultUtils;
 import com.lss.springairag.entity.SensitiveWord;
+import com.lss.springairag.pojo.vo.SensitiveWordVO;
+import com.lss.springairag.service.SensitiveCategoryService;
 import com.lss.springairag.service.SensitiveWordService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -26,10 +28,19 @@ public class SensitiveWordController {
     @Autowired
     private SensitiveWordService sensitiveWordService;
 
+    @Autowired
+    private SensitiveCategoryService sensitiveCategoryService;
+
     @Operation(summary = "新增敏感词")
     @PostMapping("/add")
     public BaseResponse addSensitiveWord(@RequestBody SensitiveWord sensitiveWord) {
         log.info("新增敏感词：{}", sensitiveWord);
+        if (sensitiveWord.getCategoryId() == null) {
+            return ResultUtils.error("请选择敏感词分类");
+        }
+        if (sensitiveCategoryService.getById(sensitiveWord.getCategoryId()) == null) {
+            return ResultUtils.error("敏感词分类不存在");
+        }
         sensitiveWord.setStatus("1");
         sensitiveWord.setCreatedAt(LocalDate.now().toString());
         sensitiveWord.setUpdatedAt(LocalDate.now().toString());
@@ -64,17 +75,15 @@ public class SensitiveWordController {
 
     @Operation(summary = "分页查询敏感词")
     @GetMapping("/page")
-    public BaseResponse<IPage<SensitiveWord>> getSensitiveWordPage(@RequestParam int page, @RequestParam int size) {
-        Page<SensitiveWord> pageParam = new Page<>(page, size);
-        Page<SensitiveWord> page1 = sensitiveWordService.page(pageParam);
-        page1.setTotal(page1.getRecords().size());
-        return ResultUtils.success(page1);
+    public BaseResponse<IPage<SensitiveWordVO>> getSensitiveWordPage(@RequestParam int page, @RequestParam int size) {
+        Page<SensitiveWordVO> pageParam = new Page<>(page, size);
+        return ResultUtils.success(sensitiveWordService.pageWithCategory(pageParam));
     }
 
     @Operation(summary = "查询所有敏感词")
     @GetMapping
-    public List<SensitiveWord> getAllSensitiveWords() {
-        return sensitiveWordService.list();
+    public List<SensitiveWordVO> getAllSensitiveWords() {
+        return sensitiveWordService.pageWithCategory(new Page<>(1, Long.MAX_VALUE)).getRecords();
     }
 
 

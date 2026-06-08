@@ -7,13 +7,37 @@
     <resultMap id="BaseResultMap" type="com.lss.springairag.entity.SensitiveWord">
             <id property="id" column="id" />
             <result property="word" column="word" />
-            <result property="category" column="category" />
+            <result property="categoryId" column="category_id" />
             <result property="status" column="status" />
             <result property="createdAt" column="created_at" />
             <result property="updatedAt" column="updated_at" />
     </resultMap>
 
     <sql id="Base_Column_List">
-        id,word,category,status,created_at,updated_at
+        id,word,category_id,status,created_at,updated_at
     </sql>
+
+    <resultMap id="SensitiveWordVOMap" type="com.lss.springairag.pojo.vo.SensitiveWordVO">
+        <id property="id" column="id" />
+        <result property="word" column="word" />
+        <result property="categoryId" column="category_id" />
+        <result property="categoryName" column="category_name" />
+        <result property="status" column="status" />
+        <result property="createdAt" column="created_at" />
+        <result property="updatedAt" column="updated_at" />
+    </resultMap>
+
+    <select id="selectPageWithCategory" resultMap="SensitiveWordVOMap">
+        SELECT
+            sw.id,
+            sw.word,
+            sw.category_id,
+            sc.category_name,
+            sw.status,
+            sw.created_at,
+            sw.updated_at
+        FROM sensitive_word sw
+        LEFT JOIN sensitive_category sc ON sw.category_id = sc.id
+        ORDER BY sw.id ASC
+    </select>
 </mapper>

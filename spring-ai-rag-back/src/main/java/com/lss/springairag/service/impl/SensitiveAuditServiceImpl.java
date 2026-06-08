@@ -6,10 +6,10 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.lss.springairag.context.BaseContext;
 import com.lss.springairag.entity.SensitiveAuditLog;
-import com.lss.springairag.entity.SensitiveWord;
 import com.lss.springairag.mapper.SensitiveAuditLogMapper;
 import com.lss.springairag.pojo.vo.SensitiveAuditResult;
 import com.lss.springairag.pojo.vo.SensitiveCategoryStatVO;
+import com.lss.springairag.pojo.vo.SensitiveWordVO;
 import com.lss.springairag.service.SensitiveAuditService;
 import com.lss.springairag.service.SensitiveWordService;
 import org.springframework.stereotype.Service;
@@ -113,7 +113,7 @@ public class SensitiveAuditServiceImpl extends ServiceImpl<SensitiveAuditLogMapp
         }
         String normalizedContent = content.toLowerCase(Locale.ROOT);
         List<SensitiveAuditResult.HitWord> hits = new ArrayList<>();
-        for (SensitiveWord sensitiveWord : sensitiveWordService.list()) {
+        for (SensitiveWordVO sensitiveWord : sensitiveWordService.pageWithCategory(new Page<>(1, Long.MAX_VALUE)).getRecords()) {
             String word = sensitiveWord.getWord();
             if (!StringUtils.hasText(word)) {
                 continue;
@@ -122,7 +122,7 @@ public class SensitiveAuditServiceImpl extends ServiceImpl<SensitiveAuditLogMapp
                 continue;
             }
             if (normalizedContent.contains(word.toLowerCase(Locale.ROOT))) {
-                String category = defaultText(sensitiveWord.getCategory(), "未分类");
+                String category = defaultText(sensitiveWord.getCategoryName(), "未分类");
                 hits.add(SensitiveAuditResult.HitWord.builder()
                         .word(word)
                         .category(category)
