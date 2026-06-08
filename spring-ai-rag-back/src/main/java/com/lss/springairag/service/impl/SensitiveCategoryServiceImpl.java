@@ -15,7 +15,14 @@ public class SensitiveCategoryServiceImpl extends ServiceImpl<SensitiveCategoryM
 
     @Override
     public IPage<SensitiveCategoryVO> pageWithWordCount(Page<SensitiveCategoryVO> page) {
-        return baseMapper.selectPageWithWordCount(page);
+        long current = Math.max(page.getCurrent(), 1);
+        long size = Math.max(page.getSize(), 1);
+        long offset = (current - 1) * size;
+        Long total = baseMapper.countWithWordCount();
+
+        Page<SensitiveCategoryVO> result = new Page<>(current, size, total == null ? 0 : total);
+        result.setRecords(baseMapper.selectPageWithWordCount(offset, size));
+        return result;
     }
 
     @Override
@@ -24,6 +31,5 @@ public class SensitiveCategoryServiceImpl extends ServiceImpl<SensitiveCategoryM
     }
 
 }
-
 
 

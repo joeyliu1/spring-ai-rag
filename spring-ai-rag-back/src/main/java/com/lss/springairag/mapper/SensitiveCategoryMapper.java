@@ -1,21 +1,23 @@
 package com.lss.springairag.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.lss.springairag.entity.SensitiveCategory;
 import com.lss.springairag.pojo.vo.SensitiveCategoryVO;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
+
+import java.util.List;
 
 
 @Mapper
 public interface SensitiveCategoryMapper extends BaseMapper<SensitiveCategory> {
 
-    IPage<SensitiveCategoryVO> selectPageWithWordCount(Page<SensitiveCategoryVO> page);
+    List<SensitiveCategoryVO> selectPageWithWordCount(@Param("offset") long offset, @Param("size") long size);
 
-    java.util.List<SensitiveCategoryVO> selectListWithWordCount();
+    List<SensitiveCategoryVO> selectListWithWordCount();
+
+    Long countWithWordCount();
 
 }
-
 
 

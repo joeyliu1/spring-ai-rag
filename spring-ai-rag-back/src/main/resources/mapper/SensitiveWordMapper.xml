@@ -39,5 +39,11 @@
         FROM sensitive_word sw
         LEFT JOIN sensitive_category sc ON sw.category_id = sc.id
         ORDER BY sw.id ASC
+        LIMIT #{size} OFFSET #{offset}
+    </select>
+
+    <select id="countWithCategory" resultType="java.lang.Long">
+        SELECT COUNT(1)
+        FROM sensitive_word sw
     </select>
 </mapper>

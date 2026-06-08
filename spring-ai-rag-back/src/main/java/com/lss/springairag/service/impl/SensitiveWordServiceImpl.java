@@ -15,10 +15,16 @@ public class SensitiveWordServiceImpl extends ServiceImpl<SensitiveWordMapper, S
 
     @Override
     public IPage<SensitiveWordVO> pageWithCategory(Page<SensitiveWordVO> page) {
-        return baseMapper.selectPageWithCategory(page);
+        long current = Math.max(page.getCurrent(), 1);
+        long size = Math.max(page.getSize(), 1);
+        long offset = (current - 1) * size;
+        Long total = baseMapper.countWithCategory();
+
+        Page<SensitiveWordVO> result = new Page<>(current, size, total == null ? 0 : total);
+        result.setRecords(baseMapper.selectPageWithCategory(offset, size));
+        return result;
     }
 
 }
-
 
 

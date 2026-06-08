@@ -48,6 +48,6 @@ public class ResultUtils {
     }
 
     public static BaseResponse error(String message) {
-        return new BaseResponse(message);
+        return new BaseResponse(1, null, message);
     }
 }

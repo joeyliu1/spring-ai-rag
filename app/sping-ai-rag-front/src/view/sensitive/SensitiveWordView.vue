@@ -169,7 +169,7 @@ const loadSensitiveList = async () => {
   isLoading.value = true
   try {
     const params = { 
-      page: queryParams.value.page - 1,
+      page: queryParams.value.page,
       size: queryParams.value.size
     }
     const res = await querySensitiveApi(params)

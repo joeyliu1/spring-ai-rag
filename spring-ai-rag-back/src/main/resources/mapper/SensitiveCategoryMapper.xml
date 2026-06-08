@@ -37,6 +37,7 @@
         LEFT JOIN sensitive_word sw ON sw.category_id = sc.id
         GROUP BY sc.id, sc.category_name, sc.created_time, sc.update_time, sc.status
         ORDER BY sc.id ASC
+        LIMIT #{size} OFFSET #{offset}
     </select>
 
     <select id="selectListWithWordCount" resultMap="SensitiveCategoryVOMap">
@@ -51,5 +52,10 @@
         LEFT JOIN sensitive_word sw ON sw.category_id = sc.id
         GROUP BY sc.id, sc.category_name, sc.created_time, sc.update_time, sc.status
         ORDER BY sc.id ASC
+    </select>
+
+    <select id="countWithWordCount" resultType="java.lang.Long">
+        SELECT COUNT(1)
+        FROM sensitive_category sc
     </select>
 </mapper>
