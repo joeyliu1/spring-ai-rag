@@ -54,6 +54,6 @@ export const updateUserApi = async (data: UpdateUserDto): Promise<Res> => {
 };
 
 // 修改密码
-export const updatePasswordApi = async (data: UpdatePasswordDto) => {
+export const updatePasswordApi = async (data: UpdatePasswordDto): Promise<Res> => {
   return service.post(UserApi.UpdatePassword, data);
 };

@@ -6,6 +6,7 @@ import com.lss.springairag.common.PageResult;
 import com.lss.springairag.common.ResultUtils;
 import com.lss.springairag.config.JwtProperties;
 import com.lss.springairag.constant.JwtClaimsConstant;
+import com.lss.springairag.context.BaseContext;
 import com.lss.springairag.entity.User;
 import com.lss.springairag.pojo.dto.PasswordDTO;
 import com.lss.springairag.pojo.dto.UserDTO;
@@ -117,6 +118,19 @@ public class UserController {
     @Operation(summary = "logout", description = "退出")
     public BaseResponse<String> logout() {
         return ResultUtils.success("退出成功");
+    }
+
+    /**
+     * 获取当前登录用户信息
+     */
+    @GetMapping("/me")
+    @Operation(summary = "me", description = "获取当前登录用户信息")
+    public BaseResponse<User> me() {
+        User user = userService.getById(BaseContext.getCurrentId());
+        if (user == null) {
+            return ResultUtils.error("当前登录用户不存在，请重新登录");
+        }
+        return ResultUtils.success(user);
     }
 
     /**

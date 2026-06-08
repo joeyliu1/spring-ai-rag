@@ -16,6 +16,7 @@ export const handleAuthError = () => {
   // 清除本地存储的认证信息
   localStorage.removeItem("token");
   localStorage.removeItem("userRole");
+  localStorage.removeItem("userId");
   
   // 跳转到登录页面
   router.push({ name: "login" });

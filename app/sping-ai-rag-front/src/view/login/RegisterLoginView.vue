@@ -311,20 +311,56 @@ const passwordForm = ref({
 const fetchUserInfo = async () => {
   try {
     const token = localStorage.getItem('token')
-    const userId = localStorage.getItem('userId')
-    if (!token || !userId) return
-    const response = await fetch(BASE_URL + `/user/${userId}`, {
+    if (!token) {
+      resetLoginState()
+      return
+    }
+    const response = await fetch(BASE_URL + '/user/me', {
       headers: {
         'Authorization': `Bearer ${token}`
       }
     })
+    if (response.status === 401) {
+      resetLoginState()
+      return
+    }
     const data = await response.json()
-    if (data.code === 0) {
+    if (data.code === 0 && data.data) {
       userInfo.value = data.data
+      localStorage.setItem('userId', String(data.data.id))
+      localStorage.setItem('userRole', data.data.userName)
       isLoggedIn.value = true
+    } else {
+      resetLoginState()
+      ElMessage({ message: data.message || '登录状态已失效，请重新登录', type: 'warning' })
     }
   } catch (error) {
     console.error('获取用户信息失败:', error)
+    resetLoginState()
+  }
+}
+
+const resetLoginState = () => {
+  localStorage.removeItem('token')
+  localStorage.removeItem('userRole')
+  localStorage.removeItem('userId')
+  isLoggedIn.value = false
+  profileDialogVisible.value = false
+  passwordDialogVisible.value = false
+  isEditing.value = false
+  userInfo.value = {
+    id: 0,
+    name: '',
+    userName: '',
+    password: '',
+    phone: '',
+    sex: '',
+    idNumber: '',
+    status: 1,
+    createTime: '',
+    updateTime: '',
+    createUser: null,
+    updateUser: null
   }
 }
 
@@ -334,24 +370,7 @@ const handleCommand = (command: string) => {
   } else if (command === 'password') {
     showPasswordDialog()
   } else if (command === 'logout') {
-    localStorage.removeItem('token')
-    localStorage.removeItem('userRole')
-    localStorage.removeItem('userId')
-    isLoggedIn.value = false
-    userInfo.value = {
-      id: 0,
-      name: '',
-      userName: '',
-      password: '',
-      phone: '',
-      sex: '',
-      idNumber: '',
-      status: 1,
-      createTime: '',
-      updateTime: '',
-      createUser: null,
-      updateUser: null
-    }
+    resetLoginState()
     router.push('/login')
     ElMessage({ message: '已成功退出登录', type: 'success' })
   }
@@ -478,7 +497,7 @@ const passwordRules: FormRules = {
     { required: true, message: '请再次输入新密码', trigger: 'blur' },
     { min: 5, max: 20, message: '密码长度在 5 到 20 个字符', trigger: 'blur' },
     {
-      validator: (rule, value, callback) => {
+      validator: (_rule, value, callback) => {
         if (value !== passwordForm.value.newPassword) {
           callback(new Error('两次输入的密码不一致'))
         } else {
