@@ -154,9 +154,31 @@
             {{ format(new Date(scope.row.updateTime), "yyyy-MM-dd HH:mm") }}
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="120" fixed="right">
+        <el-table-column label="操作" width="300" fixed="right">
           <template #default="scope">
             <div class="action-buttons">
+              <el-button
+                @click="openFileDetail(scope.row)"
+                type="info"
+                size="small"
+              >
+                详情
+              </el-button>
+              <el-button
+                @click="openChunkPreview(scope.row)"
+                type="success"
+                size="small"
+              >
+                分块
+              </el-button>
+              <el-button
+                @click="rebuildFileIndex(scope.row)"
+                type="warning"
+                size="small"
+                :loading="rebuildingFileId === scope.row.id"
+              >
+                重建
+              </el-button>
               <el-button
                 @click="deleteStoreFile(scope.row)"
                 type="danger"
@@ -192,14 +214,106 @@
         background
       />
     </div>
+
+    <el-dialog
+      v-model="detailDialogVisible"
+      title="文件详情"
+      width="720px"
+    >
+      <div v-if="currentFileDetail" class="detail-grid">
+        <div class="detail-item">
+          <span>文件名</span>
+          <strong>{{ currentFileDetail.file.fileName }}</strong>
+        </div>
+        <div class="detail-item">
+          <span>文件 ID</span>
+          <strong>{{ currentFileDetail.file.id }}</strong>
+        </div>
+        <div class="detail-item">
+          <span>分块数量</span>
+          <strong>{{ currentFileDetail.chunkCount }}</strong>
+        </div>
+        <div class="detail-item">
+          <span>向量数量</span>
+          <strong>{{ currentFileDetail.vectorCount }}</strong>
+        </div>
+        <div class="detail-item">
+          <span>上传时间</span>
+          <strong>{{ format(new Date(currentFileDetail.file.createTime), "yyyy-MM-dd HH:mm") }}</strong>
+        </div>
+        <div class="detail-item">
+          <span>更新时间</span>
+          <strong>{{ format(new Date(currentFileDetail.file.updateTime), "yyyy-MM-dd HH:mm") }}</strong>
+        </div>
+      </div>
+      <el-input
+        v-if="currentFileDetail?.vectorIds?.length"
+        :model-value="currentFileDetail.vectorIds.join('\n')"
+        type="textarea"
+        :rows="6"
+        readonly
+        class="vector-list"
+      />
+    </el-dialog>
+
+    <el-dialog
+      v-model="chunkDialogVisible"
+      title="分块预览"
+      width="960px"
+      top="5vh"
+    >
+      <el-table
+        :data="chunkData"
+        border
+        v-loading="isChunkLoading"
+        max-height="520"
+      >
+        <el-table-column prop="chunkIndex" label="Index" width="80" />
+        <el-table-column prop="chunkSize" label="大小" width="90" />
+        <el-table-column prop="documentId" label="向量 ID" width="220" show-overflow-tooltip />
+        <el-table-column label="内容预览" min-width="420">
+          <template #default="scope">
+            <div class="chunk-preview">
+              <div class="chunk-preview-text">{{ scope.row.preview }}</div>
+              <el-collapse>
+                <el-collapse-item title="查看完整内容">
+                  <pre>{{ scope.row.content }}</pre>
+                </el-collapse-item>
+              </el-collapse>
+            </div>
+          </template>
+        </el-table-column>
+      </el-table>
+      <div class="dialog-pagination">
+        <el-pagination
+          v-model:current-page="chunkQuery.page"
+          v-model:page-size="chunkQuery.pageSize"
+          :page-sizes="[10, 20, 50, 100]"
+          :total="chunkTotal"
+          layout="total, sizes, prev, pager, next"
+          background
+          @size-change="handleChunkSizeChange"
+          @current-change="handleChunkCurrentChange"
+        />
+      </div>
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
 import { type UploadUserFile, ElMessage, ElMessageBox } from "element-plus";
 import { UploadFilled, Delete, Download, Upload, Search, Setting } from '@element-plus/icons-vue'
-import {uploadFileApi, queryFileApi, deleteFileApi, downloadFileApi, queryChunkConfigApi} from "@/api/KnowHubApi";
-import { StoreFile } from "@/api/data";
+import {
+  uploadFileApi,
+  queryFileApi,
+  deleteFileApi,
+  downloadFileApi,
+  queryChunkConfigApi,
+  queryFileDetailApi,
+  queryFileChunksApi,
+  rebuildFileIndexApi
+} from "@/api/KnowHubApi";
+import { KnowledgeChunk, KnowledgeFileDetail, StoreFile } from "@/api/data";
 import { ChunkConfig, QueryFileDto } from "@/api/dto";
 import { format } from "date-fns";
 
@@ -214,6 +328,15 @@ const isLoading = ref(false);
 const isChunkConfigLoading = ref(false);
 const storeFileTotal = ref(0);
 const selectedFiles = ref<any[]>([])
+const currentFileId = ref<number | null>(null)
+const currentFileDetail = ref<KnowledgeFileDetail | null>(null)
+const detailDialogVisible = ref(false)
+const chunkDialogVisible = ref(false)
+const isChunkLoading = ref(false)
+const chunkData = ref<KnowledgeChunk[]>([])
+const chunkTotal = ref(0)
+const chunkQuery = ref({ page: 1, pageSize: 10 })
+const rebuildingFileId = ref<number | null>(null)
 const defaultChunkConfig = ref<ChunkConfig>({
   chunkSize: 1200,
   overlapSize: 200,
@@ -414,6 +537,102 @@ const openFilePreview = (e: any) => {
       });
     });
 };
+
+const openFileDetail = async (file: StoreFile) => {
+  try {
+    const res = await queryFileDetailApi(file.id)
+    if (res.code === 0) {
+      currentFileDetail.value = res.data
+      detailDialogVisible.value = true
+    } else {
+      ElMessage({
+        type: "error",
+        message: res.message,
+      });
+    }
+  } catch (err) {
+    ElMessage({
+      type: "error",
+      message: String(err),
+    });
+  }
+}
+
+const openChunkPreview = async (file: StoreFile) => {
+  currentFileId.value = file.id
+  chunkQuery.value.page = 1
+  chunkDialogVisible.value = true
+  await loadFileChunks()
+}
+
+const loadFileChunks = async () => {
+  if (!currentFileId.value) return
+  isChunkLoading.value = true
+  try {
+    const res = await queryFileChunksApi(currentFileId.value, chunkQuery.value)
+    if (res.code === 0) {
+      chunkData.value = res.data.records || []
+      chunkTotal.value = res.data.total || 0
+    } else {
+      ElMessage({
+        type: "error",
+        message: res.message,
+      });
+    }
+  } catch (err) {
+    ElMessage({
+      type: "error",
+      message: String(err),
+    });
+  } finally {
+    isChunkLoading.value = false
+  }
+}
+
+const rebuildFileIndex = (file: StoreFile) => {
+  ElMessageBox.confirm(`确定要重建 ${file.fileName} 的向量索引吗？`, "重建索引", {
+    confirmButtonText: "确定",
+    cancelButtonText: "取消",
+    type: "warning",
+  })
+    .then(async () => {
+      rebuildingFileId.value = file.id
+      try {
+        const res = await rebuildFileIndexApi(file.id)
+        if (res.code === 0) {
+          ElMessage({
+            type: "success",
+            message: res.data,
+          });
+          loadStoreFileData()
+        } else {
+          ElMessage({
+            type: "error",
+            message: res.message,
+          });
+        }
+      } catch (err) {
+        ElMessage({
+          type: "error",
+          message: String(err),
+        });
+      } finally {
+        rebuildingFileId.value = null
+      }
+    })
+    .catch(() => {});
+}
+
+const handleChunkSizeChange = (val: number) => {
+  chunkQuery.value.pageSize = val
+  chunkQuery.value.page = 1
+  loadFileChunks()
+}
+
+const handleChunkCurrentChange = (val: number) => {
+  chunkQuery.value.page = val
+  loadFileChunks()
+}
 
 const handleSizeChange = (val: number) => {
   queryFileDto.value.pageSize = val
@@ -682,8 +901,9 @@ onMounted(() => {
 
   .action-buttons {
     display: flex;
-    flex-direction: column;
+    flex-wrap: wrap;
     align-items: center;
+    justify-content: center;
     gap: 6px;
     width: 100%;
 
@@ -738,6 +958,56 @@ onMounted(() => {
     background: linear-gradient(135deg, var(--apple-blue) 0%, var(--apple-indigo) 100%);
     border-color: var(--apple-blue);
   }
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.detail-item {
+  padding: 12px;
+  border: 1px solid var(--apple-border);
+  border-radius: var(--radius-sm);
+  background: rgba(0, 0, 0, 0.02);
+
+  span {
+    display: block;
+    margin-bottom: 6px;
+    color: var(--apple-text-secondary);
+    font-size: 13px;
+  }
+
+  strong {
+    display: block;
+    color: var(--apple-text-primary);
+    font-size: 14px;
+    word-break: break-all;
+  }
+}
+
+.vector-list {
+  margin-top: 16px;
+}
+
+.chunk-preview-text {
+  color: var(--apple-text-primary);
+  line-height: 1.6;
+}
+
+.chunk-preview pre {
+  white-space: pre-wrap;
+  word-break: break-word;
+  margin: 0;
+  color: var(--apple-text-primary);
+  line-height: 1.6;
+}
+
+.dialog-pagination {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 16px;
 }
 
 .pagination-section {

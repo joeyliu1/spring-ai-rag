@@ -112,6 +112,18 @@ let routes = [
       roles: ['admin']
     },
   },
+  {
+    path: "/rag-evaluation",
+    name: "ragEvaluation",
+    component: () => import("@/view/ragEvaluation/RagEvaluationView.vue"),
+    meta: {
+      isMenu: true,
+      description: "RAG 评测",
+      icon: "DataAnalysis",
+      requiresAuth: true,
+      roles: ['admin']
+    },
+  },
 ];
 
 export default routes;

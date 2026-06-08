@@ -72,6 +72,21 @@ export const queryChunkConfigApi = async (): Promise<Res> => {
   return service.get(KnowApi.ChunkConfig);
 };
 
+export const queryFileDetailApi = async (id: number): Promise<Res> => {
+  return service.get(`${KnowApi.DetailPrefix}/${id}`);
+};
+
+export const queryFileChunksApi = async (
+  id: number,
+  params?: { page?: number; pageSize?: number }
+): Promise<Res> => {
+  return service.get(`${KnowApi.DetailPrefix}/${id}/chunks`, { params });
+};
+
+export const rebuildFileIndexApi = async (id: number): Promise<Res> => {
+  return service.post(`${KnowApi.DetailPrefix}/${id}/reindex`);
+};
+
 // 删除指定ID列表的知识库
 export const deleteFileApi = async (params: DeleteFileDto): Promise<Res> => {
   return service.delete(KnowApi.DeleteFile, {

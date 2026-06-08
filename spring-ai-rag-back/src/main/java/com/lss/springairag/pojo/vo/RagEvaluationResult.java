@@ -18,6 +18,12 @@ public class RagEvaluationResult {
 
     private int retrievedCount;
 
+    private double averageScore;
+
+    private Double maxScore;
+
+    private Double minScore;
+
     private int sourceHitCount;
 
     private int keywordHitCount;

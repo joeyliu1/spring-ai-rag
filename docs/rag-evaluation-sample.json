@@ -1,0 +1,86 @@
+{
+  "topKValues": [3, 5, 10],
+  "similarityThresholds": [0.1, 0.2],
+  "cases": [
+    {
+      "question": "系统支持哪些知识库文件管理能力？",
+      "expectedKeywords": ["上传", "删除", "重建索引", "分块预览"]
+    },
+    {
+      "question": "RAG 问答如何展示回答来源？",
+      "expectedKeywords": ["来源", "相似度", "分块"]
+    },
+    {
+      "question": "递归分块策略包含哪些可配置参数？",
+      "expectedKeywords": ["chunkSize", "overlap", "minChunkSize", "maxChunks"]
+    },
+    {
+      "question": "敏感词审核支持哪些链路？",
+      "expectedKeywords": ["输入", "输出", "拦截", "日志"]
+    },
+    {
+      "question": "热点词分析的数据来自哪里？",
+      "expectedKeywords": ["用户提问", "分词", "统计"]
+    },
+    {
+      "question": "项目如何实现多用户知识库隔离？",
+      "expectedKeywords": ["owner_user_id", "JWT", "当前用户"]
+    },
+    {
+      "question": "删除知识库文件时会同步清理哪些数据？",
+      "expectedKeywords": ["向量", "分块", "OSS"]
+    },
+    {
+      "question": "RAG 评测接口会返回哪些召回指标？",
+      "expectedKeywords": ["命中率", "Recall", "MRR", "平均相似度"]
+    },
+    {
+      "question": "系统使用哪个向量数据库？",
+      "expectedKeywords": ["Milvus", "向量检索"]
+    },
+    {
+      "question": "文档上传后如何进行内容解析？",
+      "expectedKeywords": ["Tika", "文档解析", "分块"]
+    },
+    {
+      "question": "AI 问答是否支持上下文记忆？",
+      "expectedKeywords": ["ChatMemory", "会话"]
+    },
+    {
+      "question": "敏感词命中日志包含哪些维度？",
+      "expectedKeywords": ["方向", "分类", "风险等级", "动作"]
+    },
+    {
+      "question": "热点词查询支持哪些筛选条件？",
+      "expectedKeywords": ["日期范围", "业务类型"]
+    },
+    {
+      "question": "README 展示了哪些项目资料？",
+      "expectedKeywords": ["架构图", "流程图", "截图", "接口"]
+    },
+    {
+      "question": "知识库文件重建索引的流程是什么？",
+      "expectedKeywords": ["删除旧向量", "重新写入", "更新 documentId"]
+    },
+    {
+      "question": "RAG 检索时如何限制只能查自己的文件？",
+      "expectedKeywords": ["owner_user_id", "filterExpression"]
+    },
+    {
+      "question": "项目的后端技术栈有哪些？",
+      "expectedKeywords": ["Spring Boot", "Spring AI", "MyBatis-Plus", "Redis"]
+    },
+    {
+      "question": "项目的前端技术栈有哪些？",
+      "expectedKeywords": ["Vue3", "TypeScript", "Element Plus", "ECharts"]
+    },
+    {
+      "question": "Docker Compose 会启动哪些基础服务？",
+      "expectedKeywords": ["MySQL", "Redis", "Milvus", "MinIO"]
+    },
+    {
+      "question": "分块预览会展示哪些 chunk 信息？",
+      "expectedKeywords": ["chunkIndex", "chunkSize", "content", "metadata"]
+    }
+  ]
+}

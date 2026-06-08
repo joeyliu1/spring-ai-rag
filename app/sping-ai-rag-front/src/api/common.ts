@@ -7,6 +7,7 @@ export const enum KnowApi {
   ChunkConfig = "/knowledge/chunk-config",
   DeleteFile = "/knowledge/delete",
   DownloadFile = "/knowledge/download",
+  DetailPrefix = "/knowledge",
 }
 
 export const enum ChatApi {
@@ -17,6 +18,7 @@ export const enum ChatApi {
 
 export const enum RagApi {
   StreamRag = "/ai/rag",
+  EvaluateBatch = "/rag/evaluate/batch",
 }
 
 export const enum OneApi {
