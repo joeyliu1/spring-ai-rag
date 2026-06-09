@@ -1,91 +1,110 @@
 <template>
-  <div class="know-hub-container">
-    <!-- Upload Area -->
-    <div class="upload-section">
-      <el-upload
-        class="upload-demo"
-        drag
-        multiple
-        v-model:file-list="fileList"
-        :auto-upload="false"
-        v-loading="isUploading"
-      >
-        <div class="upload-content">
-          <el-icon class="upload-icon"><upload-filled /></el-icon>
-          <div class="upload-text">
-            拖拽文件至此或<em>点击选择文件</em>进行上传
-          </div>
+  <div class="know-hub-page">
+    <div class="page-header">
+      <div>
+        <h2>我的知识库</h2>
+        <p>上传、分块、索引和管理放在同一工作区里，少跳转，少找入口。</p>
+      </div>
+      <div class="header-stats">
+        <div class="stat-card">
+          <strong>{{ storeFileTotal }}</strong>
+          <span>知识文件</span>
         </div>
-        <template #tip>
-          <div class="upload-tip">
-            <el-text>文件支持 <i>pdf、doc、md、excel、text</i> 等，最大可上传 <em style="color: var(--apple-blue)">100MB</em></el-text>
-          </div>
-        </template>
-      </el-upload>
+        <div class="stat-card">
+          <strong>{{ selectedFiles.length }}</strong>
+          <span>已选文件</span>
+        </div>
+      </div>
     </div>
 
-    <!-- Chunk Strategy -->
-    <div class="chunk-config-section">
-      <div class="chunk-config-header">
-        <div>
-          <div class="chunk-config-title">
-            <el-icon><Setting /></el-icon>
-            分块策略
+    <div class="top-grid">
+      <!-- Upload Area -->
+      <div class="panel upload-section">
+        <el-upload
+          class="upload-demo"
+          drag
+          multiple
+          v-model:file-list="fileList"
+          :auto-upload="false"
+          v-loading="isUploading"
+        >
+          <div class="upload-content">
+            <el-icon class="upload-icon"><upload-filled /></el-icon>
+            <div class="upload-text">
+              拖拽文件至此或<em>点击选择文件</em>进行上传
+            </div>
           </div>
-          <div class="chunk-config-meta">
-            递归分块：段落 / 换行 / 中英文标点 / 空格，保留相邻块重叠上下文
-          </div>
-        </div>
-        <el-button size="small" @click="resetChunkConfig" :disabled="isChunkConfigLoading">
-          恢复默认
-        </el-button>
+          <template #tip>
+            <div class="upload-tip">
+              <el-text>文件支持 <i>pdf、doc、md、excel、text</i> 等，最大可上传 <em style="color: var(--apple-blue)">100MB</em></el-text>
+            </div>
+          </template>
+        </el-upload>
       </div>
-      <div class="chunk-config-grid" v-loading="isChunkConfigLoading">
-        <div class="chunk-config-item">
-          <span>目标块大小</span>
-          <el-input-number
-            v-model="chunkConfig.chunkSize"
-            :min="chunkConfig.minAllowedChunkSize || 200"
-            :max="chunkConfig.maxAllowedChunkSize || 4000"
-            :step="100"
-            controls-position="right"
-          />
+
+      <!-- Chunk Strategy -->
+      <div class="panel chunk-config-section">
+        <div class="chunk-config-header">
+          <div>
+            <div class="chunk-config-title">
+              <el-icon><Setting /></el-icon>
+              分块策略
+            </div>
+            <div class="chunk-config-meta">
+              递归分块：段落 / 换行 / 中英文标点 / 空格，保留相邻块重叠上下文
+            </div>
+          </div>
+          <el-button size="small" @click="resetChunkConfig" :disabled="isChunkConfigLoading">
+            恢复默认
+          </el-button>
         </div>
-        <div class="chunk-config-item">
-          <span>重叠大小</span>
-          <el-input-number
-            v-model="chunkConfig.overlapSize"
-            :min="0"
-            :max="Math.floor(chunkConfig.chunkSize / 2)"
-            :step="50"
-            controls-position="right"
-          />
-        </div>
-        <div class="chunk-config-item">
-          <span>最小块大小</span>
-          <el-input-number
-            v-model="chunkConfig.minChunkSize"
-            :min="1"
-            :max="chunkConfig.chunkSize"
-            :step="20"
-            controls-position="right"
-          />
-        </div>
-        <div class="chunk-config-item">
-          <span>最大分块数</span>
-          <el-input-number
-            v-model="chunkConfig.maxChunks"
-            :min="1"
-            :max="chunkConfig.maxAllowedChunks || 20000"
-            :step="500"
-            controls-position="right"
-          />
+        <div class="chunk-config-grid" v-loading="isChunkConfigLoading">
+          <div class="chunk-config-item">
+            <span>目标块大小</span>
+            <el-input-number
+              v-model="chunkConfig.chunkSize"
+              :min="chunkConfig.minAllowedChunkSize || 200"
+              :max="chunkConfig.maxAllowedChunkSize || 4000"
+              :step="100"
+              controls-position="right"
+            />
+          </div>
+          <div class="chunk-config-item">
+            <span>重叠大小</span>
+            <el-input-number
+              v-model="chunkConfig.overlapSize"
+              :min="0"
+              :max="Math.floor(chunkConfig.chunkSize / 2)"
+              :step="50"
+              controls-position="right"
+            />
+          </div>
+          <div class="chunk-config-item">
+            <span>最小块大小</span>
+            <el-input-number
+              v-model="chunkConfig.minChunkSize"
+              :min="1"
+              :max="chunkConfig.chunkSize"
+              :step="20"
+              controls-position="right"
+            />
+          </div>
+          <div class="chunk-config-item">
+            <span>最大分块数</span>
+            <el-input-number
+              v-model="chunkConfig.maxChunks"
+              :min="1"
+              :max="chunkConfig.maxAllowedChunks || 20000"
+              :step="500"
+              controls-position="right"
+            />
+          </div>
         </div>
       </div>
     </div>
 
     <!-- Toolbar -->
-    <div class="toolbar">
+    <div class="toolbar panel">
       <div class="toolbar-left">
         <el-button
           type="danger"
@@ -128,7 +147,7 @@
     </div>
 
     <!-- Table -->
-    <div class="table-section">
+    <div class="table-section panel">
       <el-table
         :data="storeFileData"
         border
@@ -723,15 +742,77 @@ onMounted(() => {
 </script>
 
 <style scoped lang="less">
-.know-hub-container {
+.know-hub-page {
   height: 100%;
   min-height: 0;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 16px;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 16px;
+
+  h2 {
+    margin: 0;
+    font-size: 22px;
+    color: var(--apple-text-primary);
+  }
+
+  p {
+    margin: 6px 0 0;
+    color: var(--apple-text-secondary);
+  }
+}
+
+.header-stats {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.stat-card {
+  min-width: 108px;
+  padding: 12px 14px;
+  border: 1px solid var(--apple-border);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.72);
+  box-shadow: var(--shadow-sm);
+
+  strong {
+    display: block;
+    font-size: 20px;
+    color: var(--apple-text-primary);
+  }
+
+  span {
+    color: var(--apple-text-secondary);
+    font-size: 12px;
+  }
+}
+
+.top-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr);
+  gap: 16px;
+}
+
+.panel {
+  padding: 16px;
+  border: 1px solid var(--apple-border);
+  border-radius: var(--radius-xl);
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(24px);
+  box-shadow: var(--shadow-sm);
 }
 
 .upload-section {
+  display: flex;
+  flex-direction: column;
+
   :deep(.el-upload) {
     width: 100%;
   }
@@ -790,13 +871,6 @@ onMounted(() => {
 }
 
 .chunk-config-section {
-  padding: 16px 20px;
-  background: var(--apple-card);
-  backdrop-filter: blur(20px);
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--apple-border);
-  box-shadow: var(--shadow-sm);
-
   .chunk-config-header {
     display: flex;
     align-items: center;
@@ -851,13 +925,6 @@ onMounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 16px 20px;
-  background: var(--apple-card);
-  backdrop-filter: blur(20px);
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--apple-border);
-  box-shadow: var(--shadow-sm);
-
   .toolbar-left {
     display: flex;
     align-items: center;
@@ -888,11 +955,7 @@ onMounted(() => {
   min-height: 360px;
   display: flex;
   flex-direction: column;
-  background: var(--apple-card);
-  backdrop-filter: blur(20px);
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--apple-border);
-  box-shadow: var(--shadow-sm);
+  padding: 0;
   overflow: hidden;
 
   :deep(.el-table) {
@@ -957,6 +1020,32 @@ onMounted(() => {
   :deep(.el-checkbox__input.is-checked .el-checkbox__inner) {
     background: linear-gradient(135deg, var(--apple-blue) 0%, var(--apple-indigo) 100%);
     border-color: var(--apple-blue);
+  }
+}
+
+@media (max-width: 1180px) {
+  .top-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+@media (max-width: 860px) {
+  .toolbar {
+    flex-direction: column;
+    align-items: stretch;
+
+    .toolbar-left {
+      flex-wrap: wrap;
+    }
+
+    .upload-btn {
+      align-self: flex-end;
+    }
   }
 }
 

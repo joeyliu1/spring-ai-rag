@@ -1,0 +1,1107 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LSS-RAG-AI 苹果风 UI 重设计稿</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f5f5f7;
+      --surface: rgba(255, 255, 255, 0.78);
+      --surface-strong: #fff;
+      --surface-soft: #fbfbfd;
+      --line: rgba(0, 0, 0, 0.08);
+      --line-strong: rgba(0, 0, 0, 0.14);
+      --text: #1d1d1f;
+      --muted: #6e6e73;
+      --muted-2: #86868b;
+      --blue: #007aff;
+      --indigo: #5856d6;
+      --green: #30d158;
+      --orange: #ff9f0a;
+      --red: #ff453a;
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
+      --radius-xl: 22px;
+      --shadow-sm: 0 8px 24px rgba(0, 0, 0, 0.06);
+      --shadow-md: 0 18px 52px rgba(0, 0, 0, 0.10);
+      --font: -apple-system, BlinkMacSystemFont, "SF Pro Display", "PingFang SC", "Helvetica Neue", Arial, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-width: 1180px;
+      color: var(--text);
+      font-family: var(--font);
+      background:
+        radial-gradient(circle at 12% 8%, rgba(0, 122, 255, 0.10), transparent 32%),
+        radial-gradient(circle at 88% 16%, rgba(48, 209, 88, 0.10), transparent 26%),
+        linear-gradient(180deg, #fbfbfd 0%, var(--bg) 100%);
+    }
+
+    .page {
+      width: min(1500px, calc(100vw - 56px));
+      margin: 0 auto;
+      padding: 36px 0 56px;
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 28px;
+      align-items: end;
+      margin-bottom: 24px;
+    }
+
+    .eyebrow {
+      margin-bottom: 12px;
+      color: var(--blue);
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0;
+    }
+
+    h1 {
+      margin: 0;
+      max-width: 760px;
+      font-size: 42px;
+      line-height: 1.1;
+      letter-spacing: 0;
+    }
+
+    .hero p {
+      margin: 14px 0 0;
+      max-width: 720px;
+      color: var(--muted);
+      font-size: 16px;
+      line-height: 1.65;
+    }
+
+    .meta-card {
+      min-width: 310px;
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-lg);
+      background: var(--surface);
+      box-shadow: var(--shadow-sm);
+      backdrop-filter: blur(24px);
+    }
+
+    .meta-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+
+    .meta-item {
+      min-height: 72px;
+      padding: 12px;
+      border-radius: var(--radius-md);
+      background: var(--surface-soft);
+    }
+
+    .meta-item strong {
+      display: block;
+      margin-bottom: 4px;
+      font-size: 22px;
+    }
+
+    .meta-item span {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .section {
+      margin-top: 34px;
+    }
+
+    .section-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: end;
+      gap: 20px;
+      margin-bottom: 14px;
+    }
+
+    h2 {
+      margin: 0;
+      font-size: 22px;
+      letter-spacing: 0;
+    }
+
+    .section-head p {
+      margin: 6px 0 0;
+      color: var(--muted);
+      line-height: 1.55;
+    }
+
+    .pill-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      height: 30px;
+      padding: 0 11px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      color: var(--muted);
+      background: rgba(255, 255, 255, 0.72);
+      font-size: 13px;
+      white-space: nowrap;
+    }
+
+    .pill.primary {
+      color: #fff;
+      border-color: var(--blue);
+      background: var(--blue);
+    }
+
+    .comparison {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 20px;
+    }
+
+    .panel {
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-xl);
+      background: var(--surface);
+      box-shadow: var(--shadow-md);
+      backdrop-filter: blur(24px);
+    }
+
+    .panel-title {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.64);
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .panel-title span {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    .old-shot {
+      display: block;
+      width: 100%;
+      aspect-ratio: 16 / 10;
+      object-fit: contain;
+      object-position: center top;
+      background: #fff;
+    }
+
+    .browser-frame {
+      padding: 12px;
+      overflow-x: auto;
+      background: linear-gradient(180deg, #f8f8fa 0%, #eeeeef 100%);
+    }
+
+    .app-shell {
+      display: grid;
+      grid-template-columns: 222px minmax(480px, 1fr) 284px;
+      min-width: 1040px;
+      height: 620px;
+      overflow: hidden;
+      border: 1px solid var(--line-strong);
+      border-radius: 18px;
+      background: #f5f5f7;
+    }
+
+    .sidebar {
+      padding: 16px 12px;
+      border-right: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.72);
+      backdrop-filter: blur(24px);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 18px;
+      padding: 6px 8px;
+    }
+
+    .logo {
+      width: 34px;
+      height: 34px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, var(--blue), var(--indigo));
+      box-shadow: 0 8px 18px rgba(0, 122, 255, 0.22);
+    }
+
+    .brand strong {
+      display: block;
+      font-size: 15px;
+    }
+
+    .brand span {
+      display: block;
+      margin-top: 2px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .nav-title {
+      margin: 18px 8px 8px;
+      color: var(--muted-2);
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      height: 38px;
+      margin-bottom: 5px;
+      padding: 0 10px;
+      border-radius: 10px;
+      color: var(--text);
+      font-size: 13px;
+    }
+
+    .nav-item.active {
+      color: var(--blue);
+      background: rgba(0, 122, 255, 0.10);
+      font-weight: 700;
+    }
+
+    .glyph {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 20px;
+      height: 20px;
+      border-radius: 6px;
+      color: #fff;
+      background: var(--blue);
+      font-size: 12px;
+    }
+
+    .main {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      background: #fbfbfd;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      height: 62px;
+      padding: 0 22px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.82);
+      backdrop-filter: blur(24px);
+    }
+
+    .topbar h3 {
+      margin: 0;
+      font-size: 18px;
+    }
+
+    .topbar small {
+      display: block;
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .search {
+      width: 240px;
+      height: 34px;
+      padding: 0 12px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      color: var(--muted);
+      background: #f5f5f7;
+      font-size: 13px;
+      line-height: 34px;
+    }
+
+    .chat {
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      flex: 1;
+      padding: 18px 22px 14px;
+    }
+
+    .source-panel {
+      margin-bottom: 14px;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.9);
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.04);
+    }
+
+    .source-panel-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .source-panel-head strong {
+      display: block;
+      margin-bottom: 3px;
+      font-size: 13px;
+    }
+
+    .source-panel-head span {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .source-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .source-select {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      height: 38px;
+      padding: 0 12px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      color: var(--muted);
+      background: #fff;
+      font-size: 13px;
+    }
+
+    .source-strip {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 10px;
+      flex-wrap: wrap;
+    }
+
+    .source-chip {
+      display: inline-flex;
+      align-items: center;
+      height: 28px;
+      padding: 0 10px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: #fff;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .messages {
+      display: flex;
+      flex-direction: column;
+      gap: 13px;
+      min-height: 0;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    .message-row {
+      display: flex;
+      align-items: flex-end;
+      gap: 10px;
+      max-width: 78%;
+    }
+
+    .message-row.user {
+      align-self: flex-end;
+      flex-direction: row-reverse;
+    }
+
+    .avatar {
+      flex: 0 0 auto;
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--indigo), #af52de);
+    }
+
+    .user .avatar {
+      background: linear-gradient(135deg, var(--blue), #64d2ff);
+    }
+
+    .bubble {
+      padding: 11px 13px;
+      border: 1px solid var(--line);
+      border-radius: 17px;
+      background: #fff;
+      color: #2c2c2e;
+      font-size: 13px;
+      line-height: 1.55;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.04);
+    }
+
+    .user .bubble {
+      color: #fff;
+      border-color: transparent;
+      background: var(--blue);
+      box-shadow: 0 8px 20px rgba(0, 122, 255, 0.20);
+    }
+
+    .composer {
+      margin-top: 14px;
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: #fff;
+      box-shadow: 0 12px 36px rgba(0, 0, 0, 0.07);
+    }
+
+    .composer textarea {
+      display: block;
+      width: 100%;
+      height: 74px;
+      resize: none;
+      border: 0;
+      outline: 0;
+      color: var(--text);
+      font: 14px/1.5 var(--font);
+    }
+
+    .composer-actions {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 8px;
+      border-top: 1px solid var(--line);
+    }
+
+    .icon-btn,
+    .primary-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      height: 32px;
+      border: 0;
+      border-radius: 999px;
+      font: 700 13px var(--font);
+    }
+
+    .icon-btn {
+      width: 32px;
+      color: var(--muted);
+      background: #f5f5f7;
+    }
+
+    .primary-btn {
+      padding: 0 15px;
+      color: #fff;
+      background: var(--blue);
+    }
+
+    .inspector {
+      padding: 16px;
+      border-left: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.76);
+      backdrop-filter: blur(24px);
+    }
+
+    .inspector h4 {
+      margin: 0 0 12px;
+      font-size: 14px;
+    }
+
+    .metric-card,
+    .file-card {
+      margin-bottom: 10px;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: #fff;
+    }
+
+    .metric-card strong {
+      display: block;
+      margin-bottom: 3px;
+      font-size: 20px;
+    }
+
+    .metric-card span,
+    .file-card span {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .progress {
+      height: 6px;
+      margin-top: 9px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: #ebebef;
+    }
+
+    .progress i {
+      display: block;
+      height: 100%;
+      border-radius: inherit;
+      background: var(--green);
+    }
+
+    .mock-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+    }
+
+    .mock-screen {
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-xl);
+      background: rgba(255, 255, 255, 0.72);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .screen-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+    }
+
+    .screen-head h3 {
+      margin: 0;
+      font-size: 17px;
+    }
+
+    .screen-head span {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .upload-zone {
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 12px;
+    }
+
+    .drop {
+      min-height: 150px;
+      padding: 20px;
+      border: 1.5px dashed rgba(0, 122, 255, 0.36);
+      border-radius: 16px;
+      background: linear-gradient(180deg, rgba(0, 122, 255, 0.05), rgba(255, 255, 255, 0.85));
+    }
+
+    .drop strong {
+      display: block;
+      margin: 12px 0 6px;
+      font-size: 18px;
+    }
+
+    .drop p,
+    .card-note {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.55;
+    }
+
+    .settings {
+      display: grid;
+      gap: 8px;
+    }
+
+    .setting-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      height: 42px;
+      padding: 0 12px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: #fff;
+      font-size: 13px;
+    }
+
+    .setting-row strong {
+      color: var(--blue);
+    }
+
+    .toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin: 14px 0 10px;
+    }
+
+    .table {
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: #fff;
+    }
+
+    .table-row {
+      display: grid;
+      grid-template-columns: 28px 1fr 110px 110px 144px;
+      gap: 10px;
+      align-items: center;
+      min-height: 44px;
+      padding: 0 12px;
+      border-bottom: 1px solid var(--line);
+      color: #2c2c2e;
+      font-size: 12px;
+    }
+
+    .table-row.header {
+      min-height: 38px;
+      color: var(--muted);
+      background: #f5f5f7;
+      font-weight: 700;
+    }
+
+    .table-row:last-child {
+      border-bottom: 0;
+    }
+
+    .actions {
+      display: flex;
+      gap: 6px;
+    }
+
+    .mini {
+      height: 24px;
+      padding: 0 8px;
+      border-radius: 999px;
+      color: var(--blue);
+      background: rgba(0, 122, 255, 0.10);
+      line-height: 24px;
+      white-space: nowrap;
+    }
+
+    .eval-layout {
+      display: grid;
+      grid-template-columns: 270px 1fr;
+      gap: 14px;
+    }
+
+    .strategy-card {
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: #fff;
+    }
+
+    .strategy-card + .strategy-card {
+      margin-top: 10px;
+    }
+
+    .strategy-card strong {
+      display: block;
+      margin-bottom: 8px;
+    }
+
+    .range {
+      height: 7px;
+      margin: 12px 0;
+      border-radius: 999px;
+      background: linear-gradient(90deg, var(--blue) 0 62%, #e5e5ea 62% 100%);
+    }
+
+    .eval-table .table-row {
+      grid-template-columns: 1.5fr 84px 84px 84px 84px;
+    }
+
+    .score {
+      color: var(--green);
+      font-weight: 800;
+    }
+
+    .mobile-wrap {
+      display: grid;
+      grid-template-columns: 360px 1fr;
+      gap: 22px;
+      align-items: start;
+    }
+
+    .phone {
+      width: 360px;
+      height: 720px;
+      padding: 12px;
+      border: 1px solid var(--line-strong);
+      border-radius: 42px;
+      background: #111;
+      box-shadow: var(--shadow-md);
+    }
+
+    .phone-screen {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      overflow: hidden;
+      border-radius: 32px;
+      background: #fbfbfd;
+    }
+
+    .phone-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 18px 18px 12px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.86);
+    }
+
+    .phone-main {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      min-height: 0;
+      padding: 14px;
+    }
+
+    .phone .message-row {
+      max-width: 92%;
+    }
+
+    .phone .composer {
+      margin-top: auto;
+    }
+
+    .principles {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+    }
+
+    .principle {
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-lg);
+      background: rgba(255, 255, 255, 0.72);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .principle strong {
+      display: block;
+      margin-bottom: 7px;
+    }
+
+    .principle p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.55;
+    }
+
+    .diff-table {
+      display: grid;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      background: #fff;
+    }
+
+    .diff-row {
+      display: grid;
+      grid-template-columns: 180px 1fr 1fr;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .diff-row:last-child {
+      border-bottom: 0;
+    }
+
+    .diff-row > div {
+      padding: 14px;
+      border-right: 1px solid var(--line);
+      font-size: 14px;
+      line-height: 1.55;
+    }
+
+    .diff-row > div:last-child {
+      border-right: 0;
+    }
+
+    .diff-row.header {
+      color: var(--muted);
+      background: #f5f5f7;
+      font-weight: 800;
+    }
+
+    @media (max-width: 900px) {
+      body {
+        min-width: 0;
+      }
+
+      .page {
+        width: calc(100vw - 28px);
+      }
+
+      .hero,
+      .comparison,
+      .mock-grid,
+      .mobile-wrap,
+      .principles {
+        grid-template-columns: 1fr;
+      }
+
+      .app-shell {
+        grid-template-columns: 1fr;
+        height: auto;
+      }
+
+      .sidebar,
+      .inspector {
+        display: none;
+      }
+
+      .diff-row {
+        grid-template-columns: 1fr;
+      }
+
+      .diff-row > div {
+        border-right: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section class="hero">
+      <div>
+        <div class="eyebrow">UI Redesign Draft · Apple HIG Inspired</div>
+        <h1>LSS-RAG-AI 更清爽、更聚焦的苹果风界面设计稿</h1>
+        <p>本稿以“少即是清晰”为核心：减少容器嵌套，把上传、检索、问答、评测拆成更明确的工作区；保留 Element Plus 的工程可落地性，同时用更克制的色彩、毛玻璃、圆角、阴影和响应式布局提升亲和力。</p>
+      </div>
+      <aside class="meta-card">
+        <div class="meta-grid">
+          <div class="meta-item"><strong>4</strong><span>核心页面重构</span></div>
+          <div class="meta-item"><strong>2</strong><span>端适配示意</span></div>
+          <div class="meta-item"><strong>1</strong><span>对比方案</span></div>
+        </div>
+      </aside>
+    </section>
+
+    <section class="section">
+      <div class="section-head">
+        <div>
+          <h2>设计方向</h2>
+          <p>从“表单和表格堆叠”调整为“任务驱动界面”：用户先看到当前工作、上下文和下一步动作，同时保留知识库手动选择，不让系统替用户做决定。</p>
+        </div>
+        <div class="pill-row">
+          <span class="pill primary">清爽工作台</span>
+          <span class="pill">毛玻璃侧栏</span>
+          <span class="pill">底部智能输入</span>
+          <span class="pill">右侧上下文</span>
+        </div>
+      </div>
+      <div class="principles">
+        <div class="principle"><strong>层级更少</strong><p>弱化大卡片套小卡片，用页面带区、工具栏和右侧面板组织内容。</p></div>
+        <div class="principle"><strong>动作更明确</strong><p>主按钮只保留一个主动作，批量操作进入上下文工具栏。</p></div>
+        <div class="principle"><strong>状态更可见</strong><p>知识库数量、召回质量、索引状态在页面内即时呈现。</p></div>
+        <div class="principle"><strong>移动端可用</strong><p>桌面三栏在移动端变成顶栏、内容流、底部输入，不压缩核心操作。</p></div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-head">
+        <div>
+          <h2>AI 问答页对比</h2>
+          <p>左侧为现有截图，右侧为新版设计稿。新版把知识库选择从输入区上方移到上下文区，聊天区更像原生 macOS/iPadOS 助手体验。</p>
+        </div>
+      </div>
+      <div class="comparison">
+        <article class="panel">
+          <div class="panel-title">当前界面 <span>docs/screenshots/03-ai-chat.png</span></div>
+          <img class="old-shot" src="../screenshots/03-ai-chat.png" alt="当前 AI 问答界面截图" />
+        </article>
+        <article class="panel">
+          <div class="panel-title">新版设计稿 <span>Desktop · 1440px</span></div>
+          <div class="browser-frame">
+            <div class="app-shell">
+              <aside class="sidebar">
+                <div class="brand">
+                  <div class="logo"></div>
+                  <div><strong>LSS-RAG-AI</strong><span>知识库 AI 助手</span></div>
+                </div>
+                <div class="nav-title">工作区</div>
+                <div class="nav-item active"><span class="glyph">问</span>AI 问答</div>
+                <div class="nav-item"><span class="glyph">画</span>AI 绘画</div>
+                <div class="nav-item"><span class="glyph">库</span>我的知识库</div>
+                <div class="nav-title">管理</div>
+                <div class="nav-item"><span class="glyph">评</span>RAG 评测</div>
+                <div class="nav-item"><span class="glyph">词</span>热点词分析</div>
+                <div class="nav-item"><span class="glyph">审</span>敏感词管理</div>
+              </aside>
+              <section class="main">
+                <div class="topbar">
+                  <div><h3>AI 问答</h3><small>已连接 3 个知识文件 · 流式回答中</small></div>
+                  <div class="search">搜索对话或知识文件</div>
+                </div>
+                <div class="chat">
+                  <div class="source-panel">
+                    <div class="source-panel-head">
+                      <div>
+                        <strong>知识库选择</strong>
+                        <span>支持手动多选，默认不强制全选</span>
+                      </div>
+                      <div class="source-actions">
+                        <span class="pill">全选</span>
+                        <span class="pill">清空</span>
+                      </div>
+                    </div>
+                    <div class="source-select">
+                      <span class="source-placeholder">选择文件</span>
+                      <span class="source-caret">⌄</span>
+                    </div>
+                    <div class="source-strip">
+                      <span class="source-chip">产品手册.pdf</span>
+                      <span class="source-chip">RAG方案.md</span>
+                      <span class="source-chip">FAQ.xlsx</span>
+                    </div>
+                  </div>
+                  <div class="messages">
+                    <div class="message-row">
+                      <div class="avatar"></div>
+                      <div class="bubble">你好，我可以基于已选知识库回答问题。也可以帮你解释召回来源、相似度和分块内容。</div>
+                    </div>
+                    <div class="message-row user">
+                      <div class="avatar"></div>
+                      <div class="bubble">系统支持哪些知识库文件管理能力？</div>
+                    </div>
+                    <div class="message-row">
+                      <div class="avatar"></div>
+                      <div class="bubble">支持文件上传、检索、分块预览、索引重建、批量下载和删除。新版建议把“上传”和“索引策略”放在同一任务面板里，减少用户来回找配置。</div>
+                    </div>
+                  </div>
+                  <div class="composer">
+                    <textarea readonly>继续追问，或粘贴需要分析的内容...</textarea>
+                    <div class="composer-actions">
+                      <div>
+                        <button class="icon-btn">＋</button>
+                        <button class="icon-btn">⌘</button>
+                      </div>
+                      <button class="primary-btn">发送</button>
+                    </div>
+                  </div>
+                </div>
+              </section>
+              <aside class="inspector">
+                <h4>上下文</h4>
+                <div class="metric-card"><strong>3</strong><span>已选知识文件</span><div class="progress"><i style="width:72%"></i></div></div>
+                <div class="metric-card"><strong>89%</strong><span>最近回答来源命中率</span><div class="progress"><i style="width:89%"></i></div></div>
+                <h4>来源文件</h4>
+                <div class="file-card"><strong>RAG方案.md</strong><br /><span>12 个分块 · 已索引</span></div>
+                <div class="file-card"><strong>产品手册.pdf</strong><br /><span>38 个分块 · 已索引</span></div>
+              </aside>
+            </div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-head">
+        <div>
+          <h2>知识库与评测页设计稿</h2>
+          <p>知识库页面强调“上传 - 分块 - 索引 - 管理”的任务链；评测页面强调策略对比和结果可读性。</p>
+        </div>
+      </div>
+      <div class="mock-grid">
+        <article class="mock-screen">
+          <div class="screen-head"><div><h3>我的知识库</h3><span>上传前即可配置分块策略</span></div><button class="primary-btn">全部上传</button></div>
+          <div class="upload-zone">
+            <div class="drop">
+              <span class="glyph">↑</span>
+              <strong>拖入文件建立知识库</strong>
+              <p>支持 PDF、Word、Markdown、Excel、Text。上传完成后自动分块并建立向量索引。</p>
+            </div>
+            <div class="settings">
+              <div class="setting-row"><span>目标块大小</span><strong>1200</strong></div>
+              <div class="setting-row"><span>重叠大小</span><strong>200</strong></div>
+              <div class="setting-row"><span>最小块大小</span><strong>80</strong></div>
+              <div class="setting-row"><span>最大分块数</span><strong>10000</strong></div>
+            </div>
+          </div>
+          <div class="toolbar">
+            <div class="search">搜索文件名、ID 或来源</div>
+            <div class="pill-row"><span class="pill">批量下载</span><span class="pill">批量删除</span></div>
+          </div>
+          <div class="table">
+            <div class="table-row header"><div></div><div>文件名</div><div>分块</div><div>状态</div><div>操作</div></div>
+            <div class="table-row"><div>☑</div><div>RAG 方案说明.md</div><div>24</div><div><span class="score">已索引</span></div><div class="actions"><span class="mini">详情</span><span class="mini">分块</span><span class="mini">重建</span></div></div>
+            <div class="table-row"><div>☐</div><div>产品手册.pdf</div><div>38</div><div><span class="score">已索引</span></div><div class="actions"><span class="mini">详情</span><span class="mini">下载</span></div></div>
+            <div class="table-row"><div>☐</div><div>FAQ.xlsx</div><div>16</div><div>处理中</div><div class="actions"><span class="mini">查看</span></div></div>
+          </div>
+        </article>
+        <article class="mock-screen">
+          <div class="screen-head"><div><h3>RAG 评测</h3><span>用例、策略与结果同屏对比</span></div><button class="primary-btn">开始测评</button></div>
+          <div class="eval-layout">
+            <aside>
+              <div class="strategy-card"><strong>TopK 策略</strong><p class="card-note">3, 5, 10</p><div class="range"></div></div>
+              <div class="strategy-card"><strong>相似度阈值</strong><p class="card-note">0.10, 0.20</p><div class="range"></div></div>
+              <div class="strategy-card"><strong>用例数量</strong><p class="card-note">5 个有效用例</p></div>
+            </aside>
+            <div class="table eval-table">
+              <div class="table-row header"><div>策略</div><div>通过率</div><div>Recall</div><div>MRR</div><div>来源</div></div>
+              <div class="table-row"><div>topK 5 · 阈值 0.10</div><div class="score">92%</div><div>88%</div><div>0.82</div><div>90%</div></div>
+              <div class="table-row"><div>topK 10 · 阈值 0.20</div><div class="score">86%</div><div>91%</div><div>0.78</div><div>84%</div></div>
+              <div class="table-row"><div>topK 3 · 阈值 0.10</div><div>78%</div><div>74%</div><div>0.69</div><div>73%</div></div>
+            </div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-head">
+        <div>
+          <h2>移动端适配示意</h2>
+          <p>导航收进顶部入口，聊天输入固定在底部，知识库上下文以可展开抽屉呈现。</p>
+        </div>
+      </div>
+      <div class="mobile-wrap">
+        <div class="phone">
+          <div class="phone-screen">
+            <div class="phone-top"><strong>AI 问答</strong><span class="pill">知识库 3</span></div>
+            <div class="phone-main">
+              <div class="source-strip"><span class="source-chip">RAG方案.md</span><span class="source-chip">+2</span></div>
+              <div class="message-row"><div class="avatar"></div><div class="bubble">移动端保留同样的问答体验，并将上下文放到抽屉里。</div></div>
+              <div class="message-row user"><div class="avatar"></div><div class="bubble">帮我总结这份文档</div></div>
+              <div class="composer"><textarea readonly>输入问题...</textarea><div class="composer-actions"><button class="icon-btn">＋</button><button class="primary-btn">发送</button></div></div>
+            </div>
+          </div>
+        </div>
+        <div class="diff-table">
+          <div class="diff-row header"><div>维度</div><div>当前界面</div><div>新版设计稿</div></div>
+          <div class="diff-row"><div>导航</div><div>左侧菜单以功能平铺为主，角色和分组感较弱。</div><div>按“工作区 / 管理”分组，当前任务高亮更明确。</div></div>
+          <div class="diff-row"><div>问答</div><div>文件选择、消息、输入区挤在同一纵向区域。</div><div>聊天主线居中，知识库与来源进入右侧上下文面板。</div></div>
+          <div class="diff-row"><div>知识库</div><div>上传、分块策略、工具栏、表格连续堆叠。</div><div>上传和分块成为一个任务面板，批量操作根据选择状态出现。</div></div>
+          <div class="diff-row"><div>评测</div><div>配置、用例和结果都是表格/表单结构，阅读压力较大。</div><div>左侧策略，右侧结果，关键指标优先展示。</div></div>
+          <div class="diff-row"><div>落地</div><div>已有 Element Plus 和 Apple 变量，可复用。</div><div>主要改 layout、页面结构和局部样式，无需更换技术栈。</div></div>
+        </div>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

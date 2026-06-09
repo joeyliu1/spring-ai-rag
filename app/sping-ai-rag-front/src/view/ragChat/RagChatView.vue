@@ -1,50 +1,50 @@
 <template>
-  <div class="chat-container">
-    <el-card class="box-card">
-      <template #header>
-        <div class="card-header">
-          <span class="title">AI 智能问答</span>
+  <div class="rag-chat-page">
+    <div class="page-header">
+      <div>
+        <h2>AI 问答</h2>
+        <p>先手动选知识库，再开始问答。不会默认替你全选。</p>
+      </div>
+      <div class="header-stats">
+        <div class="stat-card">
+          <strong>{{ knowledgeFiles.length }}</strong>
+          <span>可选文件</span>
         </div>
-      </template>
-
-      <div class="chat-messages" ref="messageContainer">
-        <div v-for="(message, index) in messages" :key="index"
-             :class="['message', message.role === 'user' ? 'user-message' : 'assistant-message']">
-          <div class="message-wrapper">
-            <div class="message-avatar">
-              <div v-if="message.role === 'user'" class="avatar user-avatar">
-                <el-icon><User /></el-icon>
-              </div>
-              <div v-else class="avatar assistant-avatar">
-                <el-icon><MagicStick /></el-icon>
-              </div>
-            </div>
-            <div class="message-content" :class="{ 'typing': message.isTyping }" v-html="message.htmlContent || renderMarkdown(message.content)">
-            </div>
-
-            <el-button
-              class="copy-button"
-              type="text"
-              size="small"
-              @click="copyMessage(message.content)"
-            >
-              <el-icon><Document /></el-icon>
-            </el-button>
-          </div>
+        <div class="stat-card">
+          <strong>{{ selectedFiles.length }}</strong>
+          <span>已选文件</span>
         </div>
       </div>
+    </div>
 
-      <div class="input-area">
-        <div class="file-selection-inline">
-          <span class="file-selection-label">选择知识库文件：</span>
+    <div class="chat-layout">
+      <section class="chat-panel">
+        <div class="source-panel">
+          <div class="source-panel-head">
+            <div>
+              <strong>知识库选择</strong>
+              <span>支持手动多选，默认不强制全选</span>
+            </div>
+            <div class="source-actions">
+              <el-button class="source-action-btn select-all-btn" :disabled="knowledgeFiles.length === 0" @click="selectAllFiles">
+                <el-icon><Check /></el-icon>
+                <span>全选</span>
+              </el-button>
+              <el-button class="source-action-btn clear-btn" :disabled="selectedFiles.length === 0" @click="clearSelectedFiles">
+                <el-icon><Close /></el-icon>
+                <span>清空</span>
+              </el-button>
+            </div>
+          </div>
+
           <el-select
             v-model="selectedFiles"
             multiple
+            filterable
             collapse-tags
             collapse-tags-tooltip
             placeholder="选择文件"
-            style="width: 200px; margin-right: 10px;"
-            size="default"
+            class="source-select"
             @change="handleFileSelectionChange"
           >
             <el-option
@@ -54,63 +54,110 @@
               :value="file.id"
             />
           </el-select>
-          <el-popover
-            v-if="selectedFiles.length > 0"
-            trigger="hover"
-            placement="top"
-            :width="300"
-          >
-            <template #reference>
-              <el-tag
-                type="info"
-                size="small"
-                style="cursor: pointer; border-radius: 20px;"
-              >
-                已选{{ selectedFiles.length }}个
-              </el-tag>
-            </template>
-            <div class="selected-files-popover">
-              <div v-for="fileId in selectedFiles" :key="fileId" style="margin-bottom: 5px;">
-                <el-tag
-                  :title="getFileNameById(fileId)"
-                  size="small"
-                  closable
-                  @close="removeSelectedFile(fileId)"
-                  style="margin-right: 5px; margin-bottom: 5px;"
-                >
-                  {{ getFileNameByLength(fileId, 15) }}
-                </el-tag>
-              </div>
-            </div>
-          </el-popover>
-        </div>
 
-        <div class="input-container">
-          <el-input
-            v-model="userInput"
-            type="textarea"
-            :rows="3"
-            placeholder="请输入您的问题，按 Enter 发送..."
-            @keyup.enter="handleRagSend"
-            resize="none"
-          />
-          <div class="button-group">
-            <el-button type="primary" class="send-btn" @click="handleRagSend" :loading="isLoading">
-              <el-icon v-if="!isLoading"><Position /></el-icon>
-              <span>{{ isLoading ? '思考中...' : '发送' }}</span>
-            </el-button>
-            <el-button @click="clearMessages">清空对话</el-button>
+          <div v-if="selectedFiles.length > 0" class="selected-files-popover">
+            <el-tag
+              v-for="fileId in selectedFiles"
+              :key="fileId"
+              :title="getFileNameById(fileId)"
+              size="small"
+              closable
+              @close="removeSelectedFile(fileId)"
+            >
+              {{ getFileNameByLength(fileId, 16) }}
+            </el-tag>
+          </div>
+          <div v-else class="selected-files-empty">
+            先选文件，再发送问题。
           </div>
         </div>
-      </div>
-    </el-card>
+
+        <div class="chat-messages" ref="messageContainer">
+          <div
+            v-for="(message, index) in messages"
+            :key="index"
+            :class="['message', message.role === 'user' ? 'user-message' : 'assistant-message']"
+          >
+            <div class="message-wrapper">
+              <div class="message-avatar">
+                <div v-if="message.role === 'user'" class="avatar user-avatar">
+                  <el-icon><User /></el-icon>
+                </div>
+                <div v-else class="avatar assistant-avatar">
+                  <el-icon><MagicStick /></el-icon>
+                </div>
+              </div>
+              <div
+                class="message-content"
+                :class="{ typing: message.isTyping }"
+                v-html="message.htmlContent || renderMarkdown(message.content)"
+              />
+              <el-button class="copy-button" text size="small" @click="copyMessage(message.content)">
+                <el-icon><Document /></el-icon>
+              </el-button>
+            </div>
+          </div>
+        </div>
+
+        <div class="input-area">
+          <div class="input-container">
+            <el-input
+              v-model="userInput"
+              type="textarea"
+              :rows="3"
+              placeholder="请输入您的问题，按 Enter 发送..."
+              @keyup.enter="handleRagSend"
+              resize="none"
+            />
+            <div class="button-group">
+              <el-button type="primary" class="send-btn" @click="handleRagSend" :loading="isLoading">
+                <el-icon v-if="!isLoading"><Position /></el-icon>
+                <span>{{ isLoading ? '思考中...' : '发送' }}</span>
+              </el-button>
+              <el-button @click="clearMessages">清空对话</el-button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <aside class="inspector-panel">
+        <div class="inspector-card">
+          <div class="inspector-title">当前上下文</div>
+          <div class="inspector-grid">
+            <div>
+              <strong>{{ knowledgeFiles.length }}</strong>
+              <span>知识文件</span>
+            </div>
+            <div>
+              <strong>{{ selectedFiles.length }}</strong>
+              <span>当前选中</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="inspector-card">
+          <div class="inspector-title">文件列表</div>
+          <div class="inspector-list">
+            <div v-for="file in knowledgeFiles" :key="file.id" class="inspector-list-item">
+              <span>{{ file.fileName }}</span>
+              <el-tag size="small" type="info">{{ selectedFiles.includes(file.id) ? '已选' : '可选' }}</el-tag>
+            </div>
+          </div>
+        </div>
+
+        <div class="inspector-card">
+          <div class="inspector-title">使用提示</div>
+          <p class="inspector-note">仍然支持像老版本一样逐个手动挑选知识库，不会默认接管选择。</p>
+        </div>
+      </aside>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { marked } from 'marked'
-import { Document, User, MagicStick, Position } from '@element-plus/icons-vue'
+import { Check, Close, Document, User, MagicStick, Position } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { ChatApi, type ChatMessage } from '@/api/ChatApi'
 import { getStreamChat } from '@/api/StreamApi'
@@ -317,6 +364,14 @@ const handleFileSelectionChange = (value: number[]) => {
   selectedFiles.value = value
 }
 
+const selectAllFiles = () => {
+  selectedFiles.value = knowledgeFiles.value.map(file => file.id)
+}
+
+const clearSelectedFiles = () => {
+  selectedFiles.value = []
+}
+
 // 移除选中的文件
 const removeSelectedFile = (fileId: number) => {
   const index = selectedFiles.value.indexOf(fileId)
@@ -348,82 +403,192 @@ onMounted(() => {
 </script>
 
 <style scoped lang="less">
-.chat-container {
+.rag-chat-page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
   height: 100%;
   min-height: 0;
-  padding: 0;
-  display: flex;
-  overflow: hidden;
-
-  .box-card {
-    width: 100%;
-    height: 100%;
-    min-height: 0;
-    display: flex;
-    flex-direction: column;
-    border-radius: var(--radius-lg);
-    border: none;
-    box-shadow: var(--shadow-md);
-    background: var(--apple-card);
-    backdrop-filter: blur(20px);
-
-    :deep(.el-card__header) {
-      padding: 16px 20px;
-      border-bottom: 1px solid var(--apple-border);
-      background: linear-gradient(135deg, rgba(0, 122, 255, 0.03) 0%, rgba(175, 82, 222, 0.03) 100%);
-    }
-
-    :deep(.el-card__body) {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      padding: 0;
-      overflow: hidden;
-    }
-  }
 }
 
-.card-header {
+.page-header {
   display: flex;
-  align-items: center;
   justify-content: space-between;
+  align-items: flex-end;
+  gap: 16px;
 
-  .title {
-    font-size: 18px;
-    font-weight: 600;
-    background: linear-gradient(135deg, var(--apple-blue) 0%, var(--apple-purple) 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+  h2 {
+    margin: 0;
+    font-size: 22px;
+    color: var(--apple-text-primary);
+  }
+
+  p {
+    margin: 6px 0 0;
+    color: var(--apple-text-secondary);
   }
 }
 
-.file-selection-inline {
+.header-stats {
   display: flex;
-  align-items: center;
-  padding: 12px 20px;
-  border-bottom: 1px solid var(--apple-border);
-  background: rgba(0, 0, 0, 0.02);
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
-.file-selection-inline .file-selection-label {
-  margin-right: 10px;
-  font-weight: 500;
-  color: var(--apple-text-primary);
-  font-size: 14px;
+.stat-card {
+  min-width: 108px;
+  padding: 12px 14px;
+  border: 1px solid var(--apple-border);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.72);
+  box-shadow: var(--shadow-sm);
+
+  strong {
+    display: block;
+    font-size: 20px;
+    color: var(--apple-text-primary);
+  }
+
+  span {
+    color: var(--apple-text-secondary);
+    font-size: 12px;
+  }
+}
+
+.chat-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 278px;
+  gap: 16px;
+  min-height: 0;
+  flex: 1;
+}
+
+.chat-panel,
+.inspector-panel {
+  min-height: 0;
+  border: 1px solid var(--apple-border);
+  border-radius: var(--radius-xl);
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(24px);
+  box-shadow: var(--shadow-md);
+}
+
+.chat-panel {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.source-panel {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--apple-border);
+  background: rgba(255, 255, 255, 0.82);
+}
+
+.source-panel-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 10px;
+
+  strong {
+    display: block;
+    font-size: 14px;
+    color: var(--apple-text-primary);
+  }
+
+  span {
+    color: var(--apple-text-secondary);
+    font-size: 12px;
+  }
+}
+
+.source-actions {
+  display: flex;
+  gap: 4px;
+  flex-wrap: nowrap;
+  align-items: center;
+  padding: 4px;
+  border: 1px solid var(--apple-border);
+  border-radius: 999px;
+  background: rgba(245, 245, 247, 0.9);
+}
+
+.source-actions :deep(.source-action-btn) {
+  height: 30px;
+  min-width: 68px;
+  padding: 0 12px !important;
+  margin-left: 0 !important;
+  border: none !important;
+  border-radius: 999px !important;
+  box-shadow: none !important;
+  font-size: 13px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+
+  .el-icon {
+    margin-right: 4px;
+    font-size: 14px;
+  }
+}
+
+.source-actions :deep(.select-all-btn) {
+  color: var(--apple-blue) !important;
+  background: rgba(0, 122, 255, 0.1) !important;
+}
+
+.source-actions :deep(.select-all-btn:not(.is-disabled):hover) {
+  color: #fff !important;
+  background: var(--apple-blue) !important;
+}
+
+.source-actions :deep(.clear-btn) {
+  color: var(--apple-text-secondary) !important;
+  background: transparent !important;
+}
+
+.source-actions :deep(.clear-btn:not(.is-disabled):hover) {
+  color: var(--apple-red) !important;
+  background: rgba(255, 59, 48, 0.1) !important;
+}
+
+.source-actions :deep(.source-action-btn.is-disabled) {
+  color: rgba(142, 142, 147, 0.55) !important;
+  background: transparent !important;
+  opacity: 1;
+}
+
+.source-select {
+  width: 100%;
+
+  :deep(.el-select__wrapper) {
+    min-height: 40px;
+    border-radius: 12px;
+  }
 }
 
 .selected-files-popover {
-  max-height: 200px;
-  overflow-y: auto;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+  max-height: 92px;
+  overflow: auto;
+}
+
+.selected-files-empty {
+  margin-top: 10px;
+  color: var(--apple-text-secondary);
+  font-size: 12px;
 }
 
 .chat-messages {
-  flex: 1 1 auto;
+  flex: 1;
   min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 20px;
+  padding: 18px 20px;
 
   &::-webkit-scrollbar {
     width: 6px;
@@ -433,20 +598,15 @@ onMounted(() => {
     background-color: rgba(0, 0, 0, 0.15);
     border-radius: 3px;
   }
-
-  &::-webkit-scrollbar-track {
-    background-color: transparent;
-  }
 }
 
 .message {
-  margin-bottom: 20px;
-  max-width: 85%;
-  animation: messageSlideIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  margin-bottom: 16px;
+  max-width: 88%;
+  animation: messageSlideIn 0.32s cubic-bezier(0.34, 1.56, 0.64, 1);
 
   &.user-message {
     margin-left: auto;
-    text-align: right;
 
     .message-wrapper {
       flex-direction: row-reverse;
@@ -455,7 +615,7 @@ onMounted(() => {
 
     .message-content {
       background: linear-gradient(135deg, var(--apple-blue) 0%, var(--apple-indigo) 100%);
-      color: white;
+      color: #fff;
       border-bottom-right-radius: 6px;
     }
 
@@ -466,11 +626,9 @@ onMounted(() => {
 
   &.assistant-message {
     margin-right: auto;
-    text-align: left;
 
     .message-content {
-      background: rgba(255, 255, 255, 0.9);
-      backdrop-filter: blur(10px);
+      background: rgba(255, 255, 255, 0.92);
       border: 1px solid var(--apple-border);
       color: var(--apple-text-primary);
       border-bottom-left-radius: 6px;
@@ -481,7 +639,7 @@ onMounted(() => {
 @keyframes messageSlideIn {
   from {
     opacity: 0;
-    transform: translateY(10px) scale(0.95);
+    transform: translateY(10px) scale(0.96);
   }
   to {
     opacity: 1;
@@ -506,16 +664,15 @@ onMounted(() => {
     align-items: center;
     justify-content: center;
     font-size: 18px;
+    color: #fff;
   }
 
   .user-avatar {
     background: linear-gradient(135deg, var(--apple-blue) 0%, var(--apple-indigo) 100%);
-    color: white;
   }
 
   .assistant-avatar {
     background: linear-gradient(135deg, var(--apple-purple) 0%, var(--apple-indigo) 100%);
-    color: white;
   }
 }
 
@@ -526,12 +683,11 @@ onMounted(() => {
   border-radius: 18px;
   word-break: break-word;
   font-size: 14px;
-  line-height: 1.6;
+  line-height: 1.65;
   box-shadow: var(--shadow-sm);
 
   :deep(p) {
     margin: 0;
-    line-height: 1.6;
   }
 
   :deep(pre) {
@@ -551,7 +707,8 @@ onMounted(() => {
     font-size: 13px;
   }
 
-  :deep(ul), :deep(ol) {
+  :deep(ul),
+  :deep(ol) {
     padding-left: 20px;
     margin: 8px 0;
   }
@@ -563,11 +720,9 @@ onMounted(() => {
     color: var(--apple-text-secondary);
   }
 
-  &.typing {
-    &::after {
-      content: '...';
-      animation: ellipsis 1.5s infinite;
-    }
+  &.typing::after {
+    content: '...';
+    animation: ellipsis 1.5s infinite;
   }
 }
 
@@ -580,7 +735,7 @@ onMounted(() => {
 
 .copy-button {
   opacity: 0;
-  transition: opacity 0.3s;
+  transition: opacity 0.2s ease;
   padding: 4px;
   height: auto;
   color: var(--apple-text-secondary);
@@ -592,18 +747,20 @@ onMounted(() => {
   }
 }
 
+.message:hover .copy-button {
+  opacity: 1;
+}
+
 .input-area {
   flex: 0 0 auto;
-  position: relative;
-  z-index: 2;
   border-top: 1px solid var(--apple-border);
-  background: rgba(255, 255, 255, 0.5);
+  background: rgba(255, 255, 255, 0.82);
 }
 
 .input-container {
   display: flex;
   gap: 12px;
-  padding: 16px 20px;
+  padding: 16px 18px;
   align-items: flex-end;
 
   .el-textarea {
@@ -622,21 +779,109 @@ onMounted(() => {
   display: flex;
   gap: 10px;
   flex-shrink: 0;
+}
 
-  .send-btn {
-    background: linear-gradient(135deg, var(--apple-blue) 0%, var(--apple-indigo) 100%) !important;
-    border: none !important;
-    border-radius: var(--radius-sm) !important;
-    box-shadow: 0 4px 12px rgba(0, 122, 255, 0.25) !important;
+.send-btn {
+  background: linear-gradient(135deg, var(--apple-blue) 0%, var(--apple-indigo) 100%) !important;
+  border: none !important;
+  border-radius: var(--radius-sm) !important;
+  box-shadow: 0 4px 12px rgba(0, 122, 255, 0.25) !important;
 
-    &:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 6px 16px rgba(0, 122, 255, 0.35) !important;
-    }
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(0, 122, 255, 0.35) !important;
+  }
+}
+
+.inspector-panel {
+  padding: 14px;
+}
+
+.inspector-card {
+  padding: 14px;
+  border: 1px solid var(--apple-border);
+  border-radius: var(--radius-lg);
+  background: rgba(255, 255, 255, 0.82);
+
+  & + & {
+    margin-top: 12px;
+  }
+}
+
+.inspector-title {
+  margin-bottom: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--apple-text-primary);
+}
+
+.inspector-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+
+  strong {
+    display: block;
+    font-size: 20px;
+    color: var(--apple-text-primary);
   }
 
-  .el-button:not(.send-btn) {
-    border-radius: var(--radius-sm) !important;
+  span {
+    color: var(--apple-text-secondary);
+    font-size: 12px;
+  }
+}
+
+.inspector-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 360px;
+  overflow: auto;
+}
+
+.inspector-list-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(245, 245, 247, 0.9);
+  color: var(--apple-text-primary);
+  font-size: 13px;
+}
+
+.inspector-note {
+  margin: 0;
+  color: var(--apple-text-secondary);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+@media (max-width: 1180px) {
+  .chat-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .inspector-panel {
+    order: 2;
+  }
+}
+
+@media (max-width: 760px) {
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .input-container {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .button-group {
+    justify-content: flex-end;
   }
 }
 </style>

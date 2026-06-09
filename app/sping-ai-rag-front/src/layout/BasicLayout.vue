@@ -1,7 +1,7 @@
 <template>
   <div id="basic-layout">
-    <el-container>
-      <el-aside :style="asideStyle">
+    <el-container class="layout-shell">
+      <el-aside :style="asideStyle" class="layout-aside">
         <BasicAside @change-aside="changeAside" />
       </el-aside>
       <el-main class="main-content">
@@ -19,36 +19,38 @@ const asideStyle = ref({
 });
 const changeAside = (isCollapse: boolean) => {
   if (isCollapse) {
-    asideStyle.value.width = "auto";
+    asideStyle.value.width = "96px";
   } else {
-    asideStyle.value.width = "200px";
+    asideStyle.value.width = "236px";
   }
 };
 </script>
 
 <style scoped lang="less">
 #basic-layout {
-  margin: 10px;
-  height: calc(100vh - 20px);
+  padding: 16px;
+  height: 100vh;
   overflow: hidden;
+  box-sizing: border-box;
 }
 
-.el-container {
+.layout-shell {
   height: 100%;
   min-height: 0;
+  gap: 14px;
 }
 
 .main-content {
   box-sizing: border-box;
   height: 100%;
   min-height: 0;
-  margin-left: 10px;
-  background: rgba(255, 255, 255, 0.6);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border-radius: var(--radius-lg);
+  padding: 18px;
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border-radius: var(--radius-xl);
   border: 1px solid rgba(0, 0, 0, 0.06);
-  padding: 20px;
+  box-shadow: var(--shadow-md);
   overflow-y: auto;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
@@ -64,5 +66,9 @@ const changeAside = (isCollapse: boolean) => {
   &::-webkit-scrollbar-track {
     background-color: transparent;
   }
+}
+
+.layout-aside {
+  height: 100%;
 }
 </style>
