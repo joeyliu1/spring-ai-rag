@@ -144,11 +144,6 @@
             </div>
           </div>
         </div>
-
-        <div class="inspector-card">
-          <div class="inspector-title">使用提示</div>
-          <p class="inspector-note">仍然支持像老版本一样逐个手动挑选知识库，不会默认接管选择。</p>
-        </div>
       </aside>
     </div>
   </div>

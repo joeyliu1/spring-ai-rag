@@ -10,6 +10,8 @@ import com.lss.springairag.config.RagChunkProperties;
 import com.lss.springairag.context.BaseContext;
 import com.lss.springairag.entity.AliOssFile;
 import com.lss.springairag.pojo.dto.QueryFileDTO;
+import com.lss.springairag.pojo.vo.KnowledgeChunkVO;
+import com.lss.springairag.pojo.vo.KnowledgePreviewResultVO;
 import com.lss.springairag.pojo.vo.KnowledgeUploadResultVO;
 import com.lss.springairag.pojo.vo.RagChunkConfigVO;
 import com.lss.springairag.rag.RecursiveChunkSplitter;
@@ -30,6 +32,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -90,7 +93,7 @@ public class KnowledgeController {
 
             try {
                 // 原文件名
-                String originalFilename = file.getOriginalFilename();
+                String originalFilename = safeFileName(file);
                 // 文件后缀
                 String extension = originalFilename.substring(originalFilename.lastIndexOf("."));
                 // 随机文件名（OSS)
@@ -102,10 +105,6 @@ public class KnowledgeController {
                 Resource resource = file.getResource();
                 TikaDocumentReader reader = new TikaDocumentReader(resource);
                 List<Document> documents = reader.read();
-
-
-
-                // 2. 按标题、段落、句子优先递归分块，并保留相邻块重叠上下文
                 List<Document> splitDocuments = chunkSplitter.split(documents, originalFilename);
                 splitDocuments.forEach(document -> document.getMetadata().put("owner_user_id", userId));
                 // 3. 向量化
@@ -148,6 +147,49 @@ public class KnowledgeController {
                 .fileCount(uploadedFiles.size())
                 .totalChunkCount(totalChunkCount)
                 .files(uploadedFiles)
+                .build());
+    }
+
+    @Operation(summary = "preview", description = "上传前分块预览接口")
+    @PostMapping(value = "file/preview", headers = "content-type=multipart/form-data")
+    public BaseResponse preview(@RequestParam("file") List<MultipartFile> files,
+                                @RequestParam(required = false) Integer chunkSize,
+                                @RequestParam(required = false) Integer overlapSize,
+                                @RequestParam(required = false) Integer minChunkSize,
+                                @RequestParam(required = false) Integer maxChunks) {
+        if (files.isEmpty()) {
+            return ResultUtils.error(ErrorCode.PARAMS_ERROR, "请上传文件");
+        }
+        RagChunkProperties chunkOptions = buildChunkOptions(chunkSize, overlapSize, minChunkSize, maxChunks);
+        RecursiveChunkSplitter chunkSplitter = new RecursiveChunkSplitter(chunkOptions);
+        List<KnowledgePreviewResultVO.PreviewedFile> previewFiles = new ArrayList<>();
+        int totalChunkCount = 0;
+
+        for (MultipartFile file : files) {
+            try {
+                String originalFilename = safeFileName(file);
+                List<Document> documents = new TikaDocumentReader(file.getResource()).read();
+                List<Document> splitDocuments = chunkSplitter.split(documents, originalFilename);
+                List<KnowledgeChunkVO> chunks = splitDocuments.stream()
+                        .map(document -> toPreviewChunkVO(document, originalFilename))
+                        .collect(Collectors.toList());
+                previewFiles.add(KnowledgePreviewResultVO.PreviewedFile.builder()
+                        .fileName(originalFilename)
+                        .chunkCount(chunks.size())
+                        .chunks(chunks)
+                        .build());
+                totalChunkCount += chunks.size();
+            } catch (Exception e) {
+                log.error("预览分块失败", e);
+                return ResultUtils.error(ErrorCode.SYSTEM_ERROR, "分块预览失败");
+            }
+        }
+
+        return ResultUtils.success(KnowledgePreviewResultVO.builder()
+                .chunkConfig(toChunkConfigVO(chunkOptions))
+                .fileCount(previewFiles.size())
+                .totalChunkCount(totalChunkCount)
+                .files(previewFiles)
                 .build());
     }
 
@@ -246,6 +288,57 @@ public class KnowledgeController {
 
     private int normalizeMaxChunks(int maxChunks) {
         return Math.max(1, Math.min(maxChunks, 20000));
+    }
+
+    private KnowledgeChunkVO toPreviewChunkVO(Document document, String sourceName) {
+        Map<String, Object> metadata = document.getMetadata();
+        return KnowledgeChunkVO.builder()
+                .documentId(document.getId())
+                .source(sourceName)
+                .chunkIndex(metadataInteger(metadata, "chunk_index"))
+                .chunkCount(metadataInteger(metadata, "chunk_count"))
+                .chunkSize(metadataInteger(metadata, "chunk_size"))
+                .preview(preview(document.getText()))
+                .content(document.getText())
+                .metadata(metadata)
+                .build();
+    }
+
+    private String preview(String content) {
+        if (content == null) {
+            return "";
+        }
+        int maxLength = 220;
+        if (content.length() <= maxLength) {
+            return content;
+        }
+        return content.substring(0, maxLength) + "...";
+    }
+
+    private Integer metadataInteger(Map<String, Object> metadata, String key) {
+        if (metadata == null) {
+            return null;
+        }
+        Object value = metadata.get(key);
+        if (value == null) {
+            return null;
+        }
+        if (value instanceof Number number) {
+            return number.intValue();
+        }
+        try {
+            return Integer.parseInt(String.valueOf(value));
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    private String safeFileName(MultipartFile file) {
+        String originalFilename = file.getOriginalFilename();
+        if (originalFilename == null || originalFilename.isBlank()) {
+            return file.getName();
+        }
+        return originalFilename;
     }
 
 

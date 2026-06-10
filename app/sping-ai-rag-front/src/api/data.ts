@@ -17,8 +17,8 @@ export interface KnowledgeFileDetail {
 }
 
 export interface KnowledgeChunk {
-  id: number;
-  fileId: number;
+  id?: number;
+  fileId?: number;
   documentId: string;
   source: string;
   chunkIndex: number;
@@ -27,4 +27,26 @@ export interface KnowledgeChunk {
   preview: string;
   content: string;
   metadata: Record<string, unknown>;
+}
+
+export interface KnowledgePreviewFile {
+  fileName: string;
+  chunkCount: number;
+  chunks: KnowledgeChunk[];
+}
+
+export interface KnowledgePreviewResult {
+  chunkConfig: {
+    chunkSize: number;
+    overlapSize: number;
+    minChunkSize: number;
+    maxChunks: number;
+    minAllowedChunkSize?: number;
+    maxAllowedChunkSize?: number;
+    maxAllowedOverlapSize?: number;
+    maxAllowedChunks?: number;
+  };
+  fileCount: number;
+  totalChunkCount: number;
+  files: KnowledgePreviewFile[];
 }

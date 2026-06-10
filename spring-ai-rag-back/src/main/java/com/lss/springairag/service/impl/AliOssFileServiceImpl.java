@@ -175,13 +175,15 @@ public class AliOssFileServiceImpl extends ServiceImpl<AliOssFileMapper, AliOssF
         int currentPageSize = pageSize == null || pageSize <= 0
                 ? DEFAULT_CHUNK_PAGE_SIZE
                 : Math.min(pageSize, MAX_CHUNK_PAGE_SIZE);
-        Page<KnowledgeChunk> chunkPage = new Page<>(currentPage, currentPageSize);
-        IPage<KnowledgeChunk> chunks = knowledgeChunkMapper.selectPage(chunkPage,
-                new LambdaQueryWrapper<KnowledgeChunk>()
-                        .eq(KnowledgeChunk::getFileId, file.getId())
-                        .orderByAsc(KnowledgeChunk::getChunkIndex));
-        Page<KnowledgeChunkVO> resultPage = new Page<>(chunks.getCurrent(), chunks.getSize(), chunks.getTotal());
-        resultPage.setRecords(chunks.getRecords().stream()
+        long total = knowledgeChunkMapper.selectCount(new LambdaQueryWrapper<KnowledgeChunk>()
+                .eq(KnowledgeChunk::getFileId, file.getId()));
+        int offset = (currentPage - 1) * currentPageSize;
+        List<KnowledgeChunk> chunks = knowledgeChunkMapper.selectList(new LambdaQueryWrapper<KnowledgeChunk>()
+                .eq(KnowledgeChunk::getFileId, file.getId())
+                .orderByAsc(KnowledgeChunk::getChunkIndex)
+                .last("LIMIT " + offset + ", " + currentPageSize));
+        Page<KnowledgeChunkVO> resultPage = new Page<>(currentPage, currentPageSize, total);
+        resultPage.setRecords(chunks.stream()
                 .map(this::toChunkVO)
                 .collect(Collectors.toList()));
         return ResultUtils.success(resultPage);
@@ -338,4 +340,3 @@ public class AliOssFileServiceImpl extends ServiceImpl<AliOssFileMapper, AliOssF
     }
 
 }
-

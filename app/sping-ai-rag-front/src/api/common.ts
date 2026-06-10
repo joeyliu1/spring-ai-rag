@@ -3,6 +3,7 @@
  */
 export const enum KnowApi {
   UploadFile = "/knowledge/file/upload",
+  PreviewFile = "/knowledge/file/preview",
   QueryFile = "/knowledge/contents",
   ChunkConfig = "/knowledge/chunk-config",
   DeleteFile = "/knowledge/delete",

@@ -40,6 +40,25 @@
             </div>
           </template>
         </el-upload>
+        <div class="upload-actions">
+          <el-button
+            @click="previewUploadChunks"
+            :disabled="fileList.length === 0"
+            :loading="isPreviewingChunks"
+          >
+            <el-icon><Search /></el-icon>
+            预览分块
+          </el-button>
+          <el-button
+            type="warning"
+            @click="uploadFile"
+            :disabled="isUploading"
+            class="upload-btn"
+          >
+            <el-icon><Upload /></el-icon>
+            全部上传
+          </el-button>
+        </div>
       </div>
 
       <!-- Chunk Strategy -->
@@ -128,22 +147,15 @@
             v-model="queryFileDto.fileName"
             clearable
             style="width: 200px"
+            @input="handleSearchInput"
+            @clear="handleSearchInput"
           />
-          <el-button type="primary" @click="loadStoreFileData" :disabled="isLoading">
+          <el-button type="primary" @click="handleSearchNow" :disabled="isLoading">
             <el-icon><Search /></el-icon>
             搜索
           </el-button>
         </div>
       </div>
-      <el-button
-        type="warning"
-        @click="uploadFile"
-        :disabled="isUploading"
-        class="upload-btn"
-      >
-        <el-icon><Upload /></el-icon>
-        全部上传
-      </el-button>
     </div>
 
     <!-- Table -->
@@ -316,6 +328,58 @@
         />
       </div>
     </el-dialog>
+
+    <el-dialog
+      v-model="previewDialogVisible"
+      title="上传前分块预览"
+      width="1080px"
+      top="5vh"
+      :close-on-click-modal="false"
+    >
+      <div v-if="previewResult" class="preview-summary">
+        <div class="detail-item">
+          <span>文件数</span>
+          <strong>{{ previewResult.fileCount }}</strong>
+        </div>
+        <div class="detail-item">
+          <span>总分块数</span>
+          <strong>{{ previewResult.totalChunkCount }}</strong>
+        </div>
+        <div class="detail-item">
+          <span>目标块大小</span>
+          <strong>{{ previewResult.chunkConfig.chunkSize }}</strong>
+        </div>
+        <div class="detail-item">
+          <span>重叠大小</span>
+          <strong>{{ previewResult.chunkConfig.overlapSize }}</strong>
+        </div>
+      </div>
+      <el-collapse v-if="previewResult?.files?.length" accordion>
+        <el-collapse-item
+          v-for="(file, index) in previewResult.files"
+          :key="`${file.fileName}-${index}`"
+          :title="`${file.fileName} · ${file.chunkCount} 个分块`"
+        >
+          <el-table :data="file.chunks" border max-height="520">
+            <el-table-column prop="chunkIndex" label="Index" width="80" />
+            <el-table-column prop="chunkSize" label="大小" width="90" />
+            <el-table-column prop="source" label="文件" width="220" show-overflow-tooltip />
+            <el-table-column label="内容预览" min-width="420">
+              <template #default="scope">
+                <div class="chunk-preview">
+                  <div class="chunk-preview-text">{{ scope.row.preview }}</div>
+                  <el-collapse>
+                    <el-collapse-item title="查看完整内容">
+                      <pre>{{ scope.row.content }}</pre>
+                    </el-collapse-item>
+                  </el-collapse>
+                </div>
+              </template>
+            </el-table-column>
+          </el-table>
+        </el-collapse-item>
+      </el-collapse>
+    </el-dialog>
   </div>
 </template>
 
@@ -324,6 +388,7 @@ import { type UploadUserFile, ElMessage, ElMessageBox } from "element-plus";
 import { UploadFilled, Delete, Download, Upload, Search, Setting } from '@element-plus/icons-vue'
 import {
   uploadFileApi,
+  previewFileChunksApi,
   queryFileApi,
   deleteFileApi,
   downloadFileApi,
@@ -332,7 +397,7 @@ import {
   queryFileChunksApi,
   rebuildFileIndexApi
 } from "@/api/KnowHubApi";
-import { KnowledgeChunk, KnowledgeFileDetail, StoreFile } from "@/api/data";
+import { KnowledgeChunk, KnowledgeFileDetail, KnowledgePreviewResult, StoreFile } from "@/api/data";
 import { ChunkConfig, QueryFileDto } from "@/api/dto";
 import { format } from "date-fns";
 
@@ -343,6 +408,7 @@ const queryFileDto = ref<QueryFileDto>({
   fileName: "",
 });
 const isUploading = ref(false);
+const isPreviewingChunks = ref(false);
 const isLoading = ref(false);
 const isChunkConfigLoading = ref(false);
 const storeFileTotal = ref(0);
@@ -351,11 +417,14 @@ const currentFileId = ref<number | null>(null)
 const currentFileDetail = ref<KnowledgeFileDetail | null>(null)
 const detailDialogVisible = ref(false)
 const chunkDialogVisible = ref(false)
+const previewDialogVisible = ref(false)
 const isChunkLoading = ref(false)
 const chunkData = ref<KnowledgeChunk[]>([])
 const chunkTotal = ref(0)
 const chunkQuery = ref({ page: 1, pageSize: 10 })
 const rebuildingFileId = ref<number | null>(null)
+const previewResult = ref<KnowledgePreviewResult | null>(null)
+let searchTimer: number | null = null
 const defaultChunkConfig = ref<ChunkConfig>({
   chunkSize: 1200,
   overlapSize: 200,
@@ -394,6 +463,26 @@ const loadStoreFileData = () => {
       isLoading.value = false;
     });
 };
+
+const handleSearchInput = () => {
+  if (searchTimer !== null) {
+    window.clearTimeout(searchTimer)
+  }
+  searchTimer = window.setTimeout(() => {
+    queryFileDto.value.page = 1
+    loadStoreFileData()
+    searchTimer = null
+  }, 350)
+}
+
+const handleSearchNow = () => {
+  if (searchTimer !== null) {
+    window.clearTimeout(searchTimer)
+    searchTimer = null
+  }
+  queryFileDto.value.page = 1
+  loadStoreFileData()
+}
 
 const loadChunkConfig = () => {
   isChunkConfigLoading.value = true;
@@ -474,6 +563,8 @@ const uploadFile = () => {
           type: "success",
           message: summary,
         });
+        previewResult.value = null;
+        previewDialogVisible.value = false;
         fileList.value = [];
         loadStoreFileData();
       } else {
@@ -493,6 +584,66 @@ const uploadFile = () => {
     .finally(() => {
       isUploading.value = false;
     });
+};
+
+const previewUploadChunks = async () => {
+  const files: File[] = [];
+  fileList.value?.forEach((e) => {
+    if (e.raw) {
+      files.push(e.raw as File);
+    }
+  });
+
+  if (files.length === 0) {
+    ElMessage({
+      type: "warning",
+      message: "请先选择文件",
+    });
+    return;
+  }
+
+  const maxSize = 100 * 1024 * 1024;
+  for (const file of files) {
+    if (file.size > maxSize) {
+      ElMessage({
+        type: "error",
+        message: `文件 ${file.name} 超过了最大上传大小限制 (100MB)`,
+      });
+      return;
+    }
+  }
+
+  normalizeChunkConfig();
+  isPreviewingChunks.value = true;
+  try {
+    const res = await previewFileChunksApi(files, {
+      chunkSize: chunkConfig.value.chunkSize,
+      overlapSize: chunkConfig.value.overlapSize,
+      minChunkSize: chunkConfig.value.minChunkSize,
+      maxChunks: chunkConfig.value.maxChunks,
+    });
+
+    if (res.data?.code === 0) {
+      previewResult.value = res.data.data;
+      previewDialogVisible.value = true;
+      ElMessage({
+        type: "success",
+        message: "分块预览生成成功",
+      });
+    } else {
+      ElMessage({
+        type: "error",
+        message: res.data?.message || "分块预览失败",
+      });
+    }
+  } catch (err) {
+    ElMessage({
+      type: "error",
+      message: String(err),
+    });
+  } finally {
+    isPreviewingChunks.value = false;
+  }
 };
 
 const deleteStoreFile = (e: any) => {
@@ -590,8 +741,9 @@ const loadFileChunks = async () => {
   try {
     const res = await queryFileChunksApi(currentFileId.value, chunkQuery.value)
     if (res.code === 0) {
-      chunkData.value = res.data.records || []
-      chunkTotal.value = res.data.total || 0
+      const data = res.data || {}
+      chunkData.value = data.records || []
+      chunkTotal.value = Number(data.total ?? data.totalElements ?? (data.pages && data.size ? data.pages * data.size : 0))
     } else {
       ElMessage({
         type: "error",
@@ -871,6 +1023,14 @@ onMounted(() => {
   }
 }
 
+.upload-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+
 .chunk-config-section {
   .chunk-config-header {
     display: flex;
@@ -1033,6 +1193,10 @@ onMounted(() => {
     flex-direction: column;
     align-items: flex-start;
   }
+
+  .preview-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 860px) {
@@ -1053,12 +1217,24 @@ onMounted(() => {
       align-self: flex-end;
     }
   }
+
+  .preview-summary,
+  .detail-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .detail-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
+}
+
+.preview-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
 }
 
 .detail-item {
@@ -1097,6 +1273,10 @@ onMounted(() => {
   margin: 0;
   color: var(--apple-text-primary);
   line-height: 1.6;
+}
+
+.preview-summary .detail-item {
+  background: rgba(0, 122, 255, 0.03);
 }
 
 .dialog-pagination {

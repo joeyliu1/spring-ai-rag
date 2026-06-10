@@ -59,6 +59,17 @@ export const uploadFileApi = async (filesList: File[], chunkConfig?: Partial<Chu
   });
 };
 
+export const previewFileChunksApi = async (filesList: File[], chunkConfig?: Partial<ChunkConfig>): Promise<Res> => {
+  let formData = new FormData();
+  filesList.map((e) => {
+    formData.append("file", e);
+  });
+
+  return fileService.post(KnowApi.PreviewFile, formData, {
+    params: chunkConfig,
+  });
+};
+
 // 查询所有知识库接口
 export const queryFileApi = async (params: QueryFileDto): Promise<Res> => {
   console.log("请求参数：", params);
