@@ -807,6 +807,7 @@ onMounted(() => {
   background: rgba(255, 255, 255, 0.72);
   backdrop-filter: blur(24px);
   box-shadow: var(--shadow-sm);
+  min-width: 0;
 }
 
 .upload-section {
@@ -900,8 +901,8 @@ onMounted(() => {
 
   .chunk-config-grid {
     display: grid;
-    grid-template-columns: repeat(4, minmax(150px, 1fr));
-    gap: 12px;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 14px;
     min-height: 58px;
   }
 
@@ -1035,6 +1036,11 @@ onMounted(() => {
 }
 
 @media (max-width: 860px) {
+  .chunk-config-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
   .toolbar {
     flex-direction: column;
     align-items: stretch;
