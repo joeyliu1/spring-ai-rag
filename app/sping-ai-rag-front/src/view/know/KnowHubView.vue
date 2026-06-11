@@ -185,47 +185,42 @@
             {{ format(new Date(scope.row.updateTime), "yyyy-MM-dd HH:mm") }}
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="300" fixed="right">
+        <el-table-column label="操作" width="240" fixed="right">
           <template #default="scope">
             <div class="action-buttons">
               <el-button
                 @click="openFileDetail(scope.row)"
-                type="info"
                 size="small"
               >
                 详情
               </el-button>
               <el-button
                 @click="openChunkPreview(scope.row)"
-                type="success"
+                type="primary"
                 size="small"
               >
                 分块
               </el-button>
-              <el-button
-                @click="rebuildFileIndex(scope.row)"
-                type="warning"
-                size="small"
-                :loading="rebuildingFileId === scope.row.id"
+              <el-dropdown
+                trigger="click"
+                @command="createFileActionHandler(scope.row)"
               >
-                重建
-              </el-button>
-              <el-button
-                @click="deleteStoreFile(scope.row)"
-                type="danger"
-                size="small"
-                :icon="Delete"
-              >
-                删除
-              </el-button>
-              <el-button
-                @click="openFilePreview(scope.row)"
-                type="primary"
-                size="small"
-                :icon="Download"
-              >
-                下载
-              </el-button>
+                <el-button
+                  size="small"
+                  class="more-action-btn"
+                  :loading="rebuildingFileId === scope.row.id"
+                >
+                  更多
+                  <el-icon class="el-icon--right"><ArrowDown /></el-icon>
+                </el-button>
+                <template #dropdown>
+                  <el-dropdown-menu>
+                    <el-dropdown-item command="rebuild">重建索引</el-dropdown-item>
+                    <el-dropdown-item command="download">下载文件</el-dropdown-item>
+                    <el-dropdown-item command="delete" divided>删除文件</el-dropdown-item>
+                  </el-dropdown-menu>
+                </template>
+              </el-dropdown>
             </div>
           </template>
         </el-table-column>
@@ -249,7 +244,11 @@
     <el-dialog
       v-model="detailDialogVisible"
       title="文件详情"
-      width="720px"
+      width="min(720px, calc(100vw - 32px))"
+      class="know-dialog"
+      align-center
+      append-to-body
+      modal-class="know-dialog-modal"
     >
       <div v-if="currentFileDetail" class="detail-grid">
         <div class="detail-item">
@@ -290,8 +289,11 @@
     <el-dialog
       v-model="chunkDialogVisible"
       title="分块预览"
-      width="960px"
-      top="5vh"
+      width="min(960px, calc(100vw - 32px))"
+      class="know-dialog"
+      align-center
+      append-to-body
+      modal-class="know-dialog-modal"
     >
       <el-table
         :data="chunkData"
@@ -332,9 +334,12 @@
     <el-dialog
       v-model="previewDialogVisible"
       title="上传前分块预览"
-      width="1080px"
-      top="5vh"
+      width="min(1080px, calc(100vw - 32px))"
       :close-on-click-modal="false"
+      class="know-dialog"
+      align-center
+      append-to-body
+      modal-class="know-dialog-modal"
     >
       <div v-if="previewResult" class="preview-summary">
         <div class="detail-item">
@@ -385,7 +390,7 @@
 
 <script setup lang="ts">
 import { type UploadUserFile, ElMessage, ElMessageBox } from "element-plus";
-import { UploadFilled, Delete, Download, Upload, Search, Setting } from '@element-plus/icons-vue'
+import { UploadFilled, ArrowDown, Upload, Search, Setting } from '@element-plus/icons-vue'
 import {
   uploadFileApi,
   previewFileChunksApi,
@@ -707,6 +712,26 @@ const openFilePreview = (e: any) => {
       });
     });
 };
+
+const handleFileAction = (action: string, file: StoreFile) => {
+  if (action === "rebuild") {
+    rebuildFileIndex(file)
+    return
+  }
+  if (action === "download") {
+    openFilePreview(file)
+    return
+  }
+  if (action === "delete") {
+    deleteStoreFile(file)
+  }
+}
+
+const createFileActionHandler = (file: StoreFile) => {
+  return (command: unknown) => {
+    handleFileAction(String(command), file)
+  }
+}
 
 const openFileDetail = async (file: StoreFile) => {
   try {
@@ -1125,21 +1150,19 @@ onMounted(() => {
 
   .action-buttons {
     display: flex;
-    flex-wrap: wrap;
     align-items: center;
     justify-content: center;
-    gap: 6px;
+    gap: 8px;
     width: 100%;
 
     :deep(.el-button) {
       display: inline-flex !important;
       align-items: center !important;
       justify-content: center !important;
-      width: 80px !important;
-      min-width: 80px !important;
-      max-width: 80px !important;
+      width: auto !important;
+      min-width: 0 !important;
       height: 28px !important;
-      padding: 0 10px !important;
+      padding: 0 12px !important;
       margin: 0 !important;
       font-size: 13px !important;
       border: none !important;
@@ -1150,6 +1173,14 @@ onMounted(() => {
       align-items: center;
       margin-right: 4px;
       font-size: 14px;
+    }
+
+    .more-action-btn {
+      padding: 0 10px !important;
+      border: 1px solid var(--apple-border) !important;
+      background: rgba(255, 255, 255, 0.72) !important;
+      color: var(--apple-text-primary) !important;
+      box-shadow: none !important;
     }
   }
 
@@ -1175,7 +1206,7 @@ onMounted(() => {
   }
 
   :deep(.el-table__cell) {
-    padding: 12px;
+    padding: 10px 12px;
   }
 
   :deep(.el-checkbox__input.is-checked .el-checkbox__inner) {
@@ -1228,6 +1259,31 @@ onMounted(() => {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
+}
+
+:deep(.know-dialog) {
+  max-height: calc(100vh - 48px);
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 0;
+}
+
+:deep(.know-dialog-modal) {
+  background-color: rgba(0, 0, 0, 0.52) !important;
+}
+
+:deep(.know-dialog .el-dialog__header) {
+  flex: 0 0 auto;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--apple-border);
+}
+
+:deep(.know-dialog .el-dialog__body) {
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: calc(100vh - 156px);
+  overflow-y: auto;
+  padding: 24px;
 }
 
 .preview-summary {
