@@ -103,6 +103,7 @@ public class UserController {
                 .id(user.getId())
                 .userName(user.getUserName())
                 .name(user.getName())
+                .role(normalizeRole(user.getRole(), user.getUserName()))
                 .token(token)
                 .build();
 
@@ -140,9 +141,12 @@ public class UserController {
      * @return
      */
     @PostMapping("/addUser")
-    @Operation(summary = "logout", description = "新增user")
+    @Operation(summary = "addUser", description = "新增user")
     public BaseResponse save(@RequestBody UserDTO userDTO) {
         log.info("新增员工：{}", userDTO);
+        if (userService.getByUsername(userDTO.getUserName())) {
+            return ResultUtils.error("用户名已存在");
+        }
         userService.saveUser(userDTO);
         return ResultUtils.success("新增成功");
     }
@@ -201,5 +205,12 @@ public class UserController {
         log.info("编辑员工信息：{}", user);
         userService.updateById(user);
         return ResultUtils.success("编辑成功");
+    }
+
+    private String normalizeRole(String role, String userName) {
+        if ("admin".equals(role) || "user".equals(role)) {
+            return role;
+        }
+        return "admin".equals(userName) ? "admin" : "user";
     }
 }

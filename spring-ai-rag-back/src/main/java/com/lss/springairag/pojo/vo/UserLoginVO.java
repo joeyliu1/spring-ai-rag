@@ -17,5 +17,7 @@ public class UserLoginVO {
 
     private String name;
 
+    private String role;
+
     private String token;
 }

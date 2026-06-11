@@ -26,6 +26,7 @@ CREATE TABLE `tb_user` (
                            `sex` VARCHAR(255) NOT NULL COMMENT '性别',
                            `id_number` VARCHAR(255) NOT NULL COMMENT '身份证号',
                            `status` INT NOT NULL DEFAULT 1 COMMENT '状态 0：禁用 1：启用',
+                           `role` VARCHAR(32) NOT NULL DEFAULT 'user' COMMENT '角色 admin/user',
                            `create_time` DATE COMMENT '创建时间',
                            `update_time` DATE COMMENT '更新时间',
                            `create_user` BIGINT COMMENT '创建人',
@@ -36,8 +37,8 @@ CREATE TABLE `tb_user` (
 -- ----------------------------
 -- Records of tb_user
 -- ----------------------------
-INSERT INTO `tb_user` (`id`, `name`, `user_name`, `password`, `phone`, `sex`, `id_number`, `status`, `create_time`, `update_time`, `create_user`, `update_user`)
-VALUES (1, '管理员', 'admin', '21232f297a57a5a743894a0e4a801fc3', '13800138000', '男', '11010519491231002X', 1, '2025-03-03', '2025-03-03', NULL, NULL);
+INSERT INTO `tb_user` (`id`, `name`, `user_name`, `password`, `phone`, `sex`, `id_number`, `status`, `role`, `create_time`, `update_time`, `create_user`, `update_user`)
+VALUES (1, '管理员', 'admin', '21232f297a57a5a743894a0e4a801fc3', '13800138000', '男', '11010519491231002X', 1, 'admin', '2025-03-03', '2025-03-03', NULL, NULL);
 
 
 -- ----------------------------

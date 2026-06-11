@@ -70,6 +70,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
 
         //设置账号的状态，默认正常状态 1表示正常 0表示锁定
         user.setStatus(StatusConstant.ENABLE);
+        user.setRole(normalizeRole(user.getRole(), "user"));
 
         //设置密码，默认密码123456
         user.setPassword(DigestUtils.md5DigestAsHex(PasswordConstant.DEFAULT_PASSWORD.getBytes()));
@@ -113,6 +114,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     public void updateUser(UserDTO userDTO) {
         User user = new User();
         BeanUtils.copyProperties(userDTO, user);
+        user.setRole(normalizeRole(user.getRole(), null));
 
         user.setUpdateTime(LocalDate.now());
         user.setUpdateUser(BaseContext.getCurrentId());
@@ -126,6 +128,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         BeanUtils.copyProperties(user, userResult);
         //设置账号的状态，默认正常状态 1表示正常 0表示锁定
         userResult.setStatus(StatusConstant.ENABLE);
+        userResult.setRole("user");
         //设置密码，默认密码123456
         userResult.setPassword(DigestUtils.md5DigestAsHex(PasswordConstant.DEFAULT_PASSWORD.getBytes()));
 
@@ -146,8 +149,14 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         }
         return false;
     }
-}
 
+    private String normalizeRole(String role, String defaultRole) {
+        if ("admin".equals(role) || "user".equals(role)) {
+            return role;
+        }
+        return defaultRole == null ? "user" : defaultRole;
+    }
+}
 
 
 

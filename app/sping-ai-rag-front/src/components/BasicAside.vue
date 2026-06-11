@@ -56,16 +56,16 @@ const emit = defineEmits(["changeAside"]);
 const isCollapse = ref(false);
 const path = router.currentRoute.value.fullPath;
 const defaultPath = ref(path === "/" ? "/ragChat" : path);
+const currentUserRole = ref(localStorage.getItem("userRole") || "");
 
 // 使用计算属性过滤不是菜单项的路由选项
 const menuRouterList = computed(() => {
-  const userRole = localStorage.getItem("userRole");
   return routes.filter((item) => {
     if (!item.meta?.isMenu) {
       return false;
     }
     if (item.meta?.roles && Array.isArray(item.meta.roles)) {
-      return !!userRole && item.meta.roles.includes(userRole);
+      return !!currentUserRole.value && item.meta.roles.includes(currentUserRole.value);
     }
     return true;
   });
@@ -83,9 +83,31 @@ router.afterEach((to) => {
   defaultPath.value = to.path;
 });
 
+const syncUserRole = (role?: string) => {
+  currentUserRole.value = role || localStorage.getItem("userRole") || "";
+};
+
 onMounted(() => {
   emit("changeAside", isCollapse.value);
+  window.addEventListener("user-role-changed", userRoleChangedHandler as EventListener);
+  window.addEventListener("storage", storageHandler);
 });
+
+onBeforeUnmount(() => {
+  window.removeEventListener("user-role-changed", userRoleChangedHandler as EventListener);
+  window.removeEventListener("storage", storageHandler);
+});
+
+const userRoleChangedHandler = (event: Event) => {
+  const customEvent = event as CustomEvent<{ role?: string }>;
+  syncUserRole(customEvent.detail?.role);
+};
+
+const storageHandler = (event: StorageEvent) => {
+  if (event.key === "userRole") {
+    syncUserRole(event.newValue || "");
+  }
+};
 
 const handleSelect = (e: any) => {
   router.push({

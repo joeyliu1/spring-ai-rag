@@ -250,6 +250,7 @@ interface UserInfo {
   sex: string;
   idNumber: string;
   status: number;
+  role: string;
   createTime: string;
   updateTime: string;
   createUser: string | null;
@@ -282,6 +283,7 @@ const userInfo = ref<UserInfo>({
   sex: '',
   idNumber: '',
   status: 1,
+  role: 'user',
   createTime: '',
   updateTime: '',
   createUser: null,
@@ -308,6 +310,21 @@ const passwordForm = ref({
   confirmPassword: ''
 })
 
+const normalizeRole = (role?: string, userName?: string) => {
+  if (role === 'admin' || role === 'user') {
+    return role
+  }
+  return userName === 'admin' ? 'admin' : 'user'
+}
+
+const updateStoredRole = (role?: string, userName?: string) => {
+  const normalizedRole = normalizeRole(role, userName)
+  localStorage.setItem('userRole', normalizedRole)
+  window.dispatchEvent(new CustomEvent('user-role-changed', {
+    detail: { role: normalizedRole }
+  }))
+}
+
 const fetchUserInfo = async () => {
   try {
     const token = localStorage.getItem('token')
@@ -328,7 +345,7 @@ const fetchUserInfo = async () => {
     if (data.code === 0 && data.data) {
       userInfo.value = data.data
       localStorage.setItem('userId', String(data.data.id))
-      localStorage.setItem('userRole', data.data.userName)
+      updateStoredRole(data.data.role, data.data.userName)
       isLoggedIn.value = true
     } else {
       resetLoginState()
@@ -344,6 +361,9 @@ const resetLoginState = () => {
   localStorage.removeItem('token')
   localStorage.removeItem('userRole')
   localStorage.removeItem('userId')
+  window.dispatchEvent(new CustomEvent('user-role-changed', {
+    detail: { role: '' }
+  }))
   isLoggedIn.value = false
   profileDialogVisible.value = false
   passwordDialogVisible.value = false
@@ -357,6 +377,7 @@ const resetLoginState = () => {
     sex: '',
     idNumber: '',
     status: 1,
+    role: 'user',
     createTime: '',
     updateTime: '',
     createUser: null,
@@ -385,7 +406,7 @@ const handleLogin = async () => {
     const data = await response.json()
     if (data.code === 0) {
       localStorage.setItem('token', data.data.token)
-      localStorage.setItem('userRole', data.data.userName)
+      updateStoredRole(data.data.role, data.data.userName)
       localStorage.setItem('userId',data.data.id)
 
       ElMessage({ message: '登录成功', type: 'success' })

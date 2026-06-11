@@ -20,6 +20,13 @@
           <el-table-column prop="phone" label="手机号" width="130"/>
           <el-table-column prop="sex" label="性别" width="90"/>
           <el-table-column prop="idNumber" label="身份证号" width="190" />
+          <el-table-column prop="role" label="角色" width="120">
+            <template #default="scope">
+              <el-tag :type="scope.row.role === 'admin' ? 'warning' : 'info'">
+                {{ scope.row.role === 'admin' ? '管理员' : '普通用户' }}
+              </el-tag>
+            </template>
+          </el-table-column>
           <el-table-column prop="status" label="状态" width="130">
             <template #default="scope">
               <el-tag :type="scope.row.status === 1 ? 'success' : 'danger'">
@@ -27,11 +34,13 @@
               </el-tag>
             </template>
           </el-table-column>
-          <el-table-column prop="createTime" label="创建时间" width="120"/>
-          <el-table-column label="操作" width="250" fixed="right">
+          <el-table-column prop="createTime" label="创建时间" width="160" show-overflow-tooltip />
+          <el-table-column label="操作" width="180" fixed="right">
             <template #default="scope">
-              <el-button type="primary" size="small" @click="handleEdit(scope.row)">编辑</el-button>
-              <el-button type="danger" size="small" @click="handleDelete(scope.row)">删除</el-button>
+              <div class="action-buttons">
+                <el-button type="primary" size="small" @click="handleEdit(scope.row)">编辑</el-button>
+                <el-button type="danger" size="small" @click="handleDelete(scope.row)">删除</el-button>
+              </div>
             </template>
           </el-table-column>
         </el-table>
@@ -83,6 +92,12 @@
         <el-form-item label="身份证号" prop="idNumber">
           <el-input v-model="userForm.idNumber" />
         </el-form-item>
+        <el-form-item label="角色" prop="role">
+          <el-select v-model="userForm.role" style="width: 100%">
+            <el-option label="普通用户" value="user" />
+            <el-option label="管理员" value="admin" />
+          </el-select>
+        </el-form-item>
       </el-form>
       <template #footer>
         <span class="dialog-footer">
@@ -97,7 +112,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { queryFileApi, registerUserApi, updateUserApi } from '@/api/UserApi'
+import { addUserApi, queryFileApi, updateUserApi } from '@/api/UserApi'
 import { QueryFileDto } from "@/api/dto.ts"
 import type { FormInstance, FormRules } from 'element-plus'
 
@@ -109,6 +124,7 @@ interface UserInfo {
   phone: string
   sex: string
   idNumber: string
+  role: string
   status: number
   createTime: string
   updateTime: string
@@ -136,7 +152,8 @@ const userForm = ref({
   password: '',
   phone: '',
   sex: '男',
-  idNumber: ''
+  idNumber: '',
+  role: 'user'
 })
 
 const isEdit = ref(false)
@@ -152,6 +169,7 @@ const userRules: FormRules = {
     { pattern: /^1[3-9]\d{9}$/, message: '请输入正确的手机号', trigger: 'blur' }
   ],
   sex: [{ required: true, message: '请选择性别', trigger: 'change' }],
+  role: [{ required: true, message: '请选择角色', trigger: 'change' }],
   idNumber: [
     { required: true, message: '请输入身份证号', trigger: 'blur' },
     { pattern: /(^\d{15}$)|(^\d{18}$)|(^\d{17}(\d|X|x)$)/, message: '请输入正确的身份证号', trigger: 'blur' }
@@ -167,6 +185,7 @@ const editRules: FormRules = {
     { pattern: /^1[3-9]\d{9}$/, message: '请输入正确的手机号', trigger: 'blur' }
   ],
   sex: [{ required: true, message: '请选择性别', trigger: 'change' }],
+  role: [{ required: true, message: '请选择角色', trigger: 'change' }],
   idNumber: [
     { required: true, message: '请输入身份证号', trigger: 'blur' },
     { pattern: /(^\d{15}$)|(^\d{18}$)|(^\d{17}(\d|X|x)$)/, message: '请输入正确的身份证号', trigger: 'blur' }
@@ -225,7 +244,8 @@ const handleAdd = () => {
     password: '',
     phone: '',
     sex: '男',
-    idNumber: ''
+    idNumber: '',
+    role: 'user'
   }
   dialogVisible.value = true
 }
@@ -241,7 +261,8 @@ const handleEdit = (row: UserInfo) => {
     password: '', // 编辑时不需要密码
     phone: row.phone,
     sex: row.sex,
-    idNumber: row.idNumber
+    idNumber: row.idNumber,
+    role: row.role || 'user'
   }
   dialogVisible.value = true
 }
@@ -280,11 +301,12 @@ const submitForm = async () => {
             userName: userForm.value.userName,
             phone: userForm.value.phone,
             sex: userForm.value.sex,
-            idNumber: userForm.value.idNumber
+            idNumber: userForm.value.idNumber,
+            role: userForm.value.role
           })
         } else {
           // 新增用户
-          response = await registerUserApi(userForm.value)
+          response = await addUserApi(userForm.value)
         }
 
         if (response.code === 0) {
@@ -339,6 +361,13 @@ onMounted(() => {
     margin-top: 20px;
     display: flex;
     justify-content: flex-end;
+  }
+
+  .action-buttons {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: nowrap;
   }
 }
 </style>
