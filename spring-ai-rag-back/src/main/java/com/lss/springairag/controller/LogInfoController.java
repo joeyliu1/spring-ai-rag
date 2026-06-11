@@ -14,6 +14,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @Tag(name = "LogInfoController", description = "日志控制器")
 @Slf4j
 @RestController
@@ -41,6 +43,7 @@ public class LogInfoController {
         if (requestParams != null) {
             queryWrapper.like("request_params", requestParams);
         }
+        queryWrapper.orderByDesc("request_time", "id");
         Page<LogInfo> result = logInfoService.page(pageParam, queryWrapper);
         result.setTotal(result.getRecords().size());
         return ResultUtils.success(result);
@@ -48,8 +51,10 @@ public class LogInfoController {
 
     @Operation(summary = "批量删除日志信息")
     @PostMapping("/batch")
-    public BaseResponse deleteLogInfos() {
-        boolean result = logInfoService.remove(null);
+    public BaseResponse deleteLogInfos(@RequestBody(required = false) List<Long> ids) {
+        boolean result = ids == null || ids.isEmpty()
+                ? logInfoService.remove(null)
+                : logInfoService.removeByIds(ids);
         if (result) {
             return ResultUtils.success("删除成功");
         } else {

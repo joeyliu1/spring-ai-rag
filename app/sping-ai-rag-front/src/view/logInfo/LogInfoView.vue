@@ -22,9 +22,13 @@
 
       <!-- 工具栏 -->
       <div class="table-header">
-        <el-button type="danger" @click="handleBatchDelete">
-          清空日志
+        <el-button class="delete-selected-btn" type="danger" :disabled="selectedIds.length === 0" @click="handleDeleteSelected">
+          删除选中
         </el-button>
+        <el-button class="clear-all-btn" type="danger" @click="handleClearAll">
+          清空全部
+        </el-button>
+        <span class="selection-count">已选 {{ selectedIds.length }} 条</span>
       </div>
       
       <!-- 表格 -->
@@ -123,10 +127,15 @@ const handleSelectionChange = (selection: LogInfo[]) => {
   selectedIds.value = selection.map(item => item.id.toString())
 }
 
-// 批量删除
-const handleBatchDelete = () => {
+// 删除选中
+const handleDeleteSelected = () => {
+  if (selectedIds.value.length === 0) {
+    ElMessage.warning('请先选择要删除的日志')
+    return
+  }
+
   ElMessageBox.confirm(
-    `确定要清除日志吗？`,
+    `确定要删除选中的 ${selectedIds.value.length} 条日志吗？`,
     '警告',
     {
       confirmButtonText: '确定',
@@ -135,9 +144,10 @@ const handleBatchDelete = () => {
     }
   ).then(async () => {
     try {
-      const res = await batchDeleteLogApi()
+      const res = await batchDeleteLogApi(selectedIds.value)
       if (res.code === 0) {
         ElMessage.success('删除成功')
+        selectedIds.value = []
         loadLogData()
       } else {
         ElMessage.error(res.message || '删除失败')
@@ -148,6 +158,36 @@ const handleBatchDelete = () => {
     }
   }).catch(() => {
     ElMessage.info('已取消删除')
+  })
+}
+
+// 清空全部
+const handleClearAll = () => {
+  ElMessageBox.confirm(
+    `确定要清空全部日志吗？该操作不可撤销。`,
+    '警告',
+    {
+      confirmButtonText: '清空全部',
+      cancelButtonText: '取消',
+      type: 'warning',
+    }
+  ).then(async () => {
+    try {
+      const res = await batchDeleteLogApi()
+      if (res.code === 0) {
+        ElMessage.success('清空成功')
+        selectedIds.value = []
+        queryParams.value.page = 1
+        loadLogData()
+      } else {
+        ElMessage.error(res.message || '清空失败')
+      }
+    } catch (error) {
+      console.error('清空日志错误:', error)
+      ElMessage.error('清空失败')
+    }
+  }).catch(() => {
+    ElMessage.info('已取消清空')
   })
 }
 
@@ -218,6 +258,23 @@ onMounted(() => {
 
   .table-header {
     margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .selection-count {
+    color: var(--apple-text-secondary);
+    font-size: 13px;
+  }
+
+  .delete-selected-btn {
+    min-width: 112px;
+  }
+
+  .clear-all-btn {
+    min-width: 112px;
   }
 
   .table-container {

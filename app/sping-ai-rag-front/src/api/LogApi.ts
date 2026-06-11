@@ -28,7 +28,7 @@ export const queryLogApi = async (params: LogQueryParams): Promise<Res> => {
   return service.get(LogInfoApi.QueryPage, { params });
 };
 
-// 批量删除日志
-export const batchDeleteLogApi = async (): Promise<Res> => {
-  return service.post(LogInfoApi.BatchDelete);
+// 批量删除日志。不传 ids 时清空全部。
+export const batchDeleteLogApi = async (ids?: string[]): Promise<Res> => {
+  return service.post(LogInfoApi.BatchDelete, ids && ids.length > 0 ? ids : undefined);
 };
