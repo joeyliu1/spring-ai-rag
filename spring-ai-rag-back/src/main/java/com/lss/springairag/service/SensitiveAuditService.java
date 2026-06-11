@@ -17,4 +17,6 @@ public interface SensitiveAuditService extends IService<SensitiveAuditLog> {
     IPage<SensitiveAuditLog> pageAuditLogs(int page, int size, String direction, String riskLevel, String action);
 
     List<SensitiveCategoryStatVO> categoryStats();
+
+    void refreshMatcher();
 }

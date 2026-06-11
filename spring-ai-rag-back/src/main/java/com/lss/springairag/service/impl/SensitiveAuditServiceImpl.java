@@ -16,11 +16,15 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Queue;
+import java.util.Set;
 
 @Service
 public class SensitiveAuditServiceImpl extends ServiceImpl<SensitiveAuditLogMapper, SensitiveAuditLog>
@@ -31,6 +35,8 @@ public class SensitiveAuditServiceImpl extends ServiceImpl<SensitiveAuditLogMapp
     private static final String ACTION_BLOCK = "BLOCK";
 
     private final SensitiveWordService sensitiveWordService;
+
+    private volatile SensitiveWordMatcher sensitiveWordMatcher;
 
     public SensitiveAuditServiceImpl(SensitiveWordService sensitiveWordService) {
         this.sensitiveWordService = sensitiveWordService;
@@ -81,6 +87,11 @@ public class SensitiveAuditServiceImpl extends ServiceImpl<SensitiveAuditLogMapp
                 .toList();
     }
 
+    @Override
+    public void refreshMatcher() {
+        sensitiveWordMatcher = buildMatcher();
+    }
+
     private SensitiveAuditResult audit(String content, String direction, String scene) {
         List<SensitiveAuditResult.HitWord> hits = findHits(content);
         if (hits.isEmpty()) {
@@ -111,26 +122,35 @@ public class SensitiveAuditServiceImpl extends ServiceImpl<SensitiveAuditLogMapp
         if (!StringUtils.hasText(content)) {
             return List.of();
         }
-        String normalizedContent = content.toLowerCase(Locale.ROOT);
-        List<SensitiveAuditResult.HitWord> hits = new ArrayList<>();
-        for (SensitiveWordVO sensitiveWord : sensitiveWordService.pageWithCategory(new Page<>(1, Long.MAX_VALUE)).getRecords()) {
-            String word = sensitiveWord.getWord();
-            if (!StringUtils.hasText(word)) {
-                continue;
-            }
-            if (!"1".equals(sensitiveWord.getStatus())) {
-                continue;
-            }
-            if (normalizedContent.contains(word.toLowerCase(Locale.ROOT))) {
-                String category = defaultText(sensitiveWord.getCategoryName(), "未分类");
-                hits.add(SensitiveAuditResult.HitWord.builder()
-                        .word(word)
-                        .category(category)
-                        .riskLevel(resolveRiskLevel(category))
-                        .build());
+        SensitiveWordMatcher matcher = sensitiveWordMatcher;
+        if (matcher == null) {
+            synchronized (this) {
+                matcher = sensitiveWordMatcher;
+                if (matcher == null) {
+                    matcher = buildMatcher();
+                    sensitiveWordMatcher = matcher;
+                }
             }
         }
-        return hits;
+        return matcher.find(content);
+    }
+
+    private SensitiveWordMatcher buildMatcher() {
+        List<SensitiveWordVO> words = sensitiveWordService.pageWithCategory(new Page<>(1, Long.MAX_VALUE)).getRecords();
+        List<SensitiveWordRule> rules = words.stream()
+                .filter(word -> word != null && StringUtils.hasText(word.getWord()))
+                .filter(word -> "1".equals(word.getStatus()))
+                .map(word -> {
+                    String category = defaultText(word.getCategoryName(), "未分类");
+                    return new SensitiveWordRule(
+                            word.getWord(),
+                            word.getWord().toLowerCase(Locale.ROOT),
+                            category,
+                            resolveRiskLevel(category)
+                    );
+                })
+                .toList();
+        return new SensitiveWordMatcher(rules);
     }
 
     private void saveAuditLog(String content,
@@ -215,5 +235,93 @@ public class SensitiveAuditServiceImpl extends ServiceImpl<SensitiveAuditLogMapp
             this.category = category;
             this.riskLevel = riskLevel;
         }
+    }
+
+    private record SensitiveWordRule(String word, String normalizedWord, String category, String riskLevel) {
+    }
+
+    private static class SensitiveWordMatcher {
+
+        private final MatchNode root = new MatchNode();
+
+        private SensitiveWordMatcher(List<SensitiveWordRule> rules) {
+            for (SensitiveWordRule rule : rules) {
+                addRule(rule);
+            }
+            buildFailureLinks();
+        }
+
+        private List<SensitiveAuditResult.HitWord> find(String content) {
+            if (root.children.isEmpty()) {
+                return List.of();
+            }
+            String normalizedContent = content.toLowerCase(Locale.ROOT);
+            List<SensitiveAuditResult.HitWord> hits = new ArrayList<>();
+            Set<String> seen = new HashSet<>();
+            MatchNode current = root;
+            for (int i = 0; i < normalizedContent.length(); i++) {
+                char ch = normalizedContent.charAt(i);
+                while (current != root && !current.children.containsKey(ch)) {
+                    current = current.failure;
+                }
+                current = current.children.getOrDefault(ch, root);
+                if (current.outputs.isEmpty()) {
+                    continue;
+                }
+                for (SensitiveWordRule rule : current.outputs) {
+                    String key = rule.word() + "#" + rule.category();
+                    if (!seen.add(key)) {
+                        continue;
+                    }
+                    hits.add(SensitiveAuditResult.HitWord.builder()
+                            .word(rule.word())
+                            .category(rule.category())
+                            .riskLevel(rule.riskLevel())
+                            .build());
+                }
+            }
+            return hits;
+        }
+
+        private void addRule(SensitiveWordRule rule) {
+            MatchNode current = root;
+            for (int i = 0; i < rule.normalizedWord().length(); i++) {
+                char ch = rule.normalizedWord().charAt(i);
+                current = current.children.computeIfAbsent(ch, unused -> new MatchNode());
+            }
+            current.outputs.add(rule);
+        }
+
+        private void buildFailureLinks() {
+            Queue<MatchNode> queue = new ArrayDeque<>();
+            root.failure = root;
+            for (MatchNode child : root.children.values()) {
+                child.failure = root;
+                queue.add(child);
+            }
+            while (!queue.isEmpty()) {
+                MatchNode current = queue.poll();
+                for (Map.Entry<Character, MatchNode> entry : current.children.entrySet()) {
+                    char ch = entry.getKey();
+                    MatchNode child = entry.getValue();
+                    MatchNode failure = current.failure;
+                    while (failure != root && !failure.children.containsKey(ch)) {
+                        failure = failure.failure;
+                    }
+                    child.failure = failure.children.getOrDefault(ch, root);
+                    child.outputs.addAll(child.failure.outputs);
+                    queue.add(child);
+                }
+            }
+        }
+    }
+
+    private static class MatchNode {
+
+        private final Map<Character, MatchNode> children = new LinkedHashMap<>();
+
+        private final List<SensitiveWordRule> outputs = new ArrayList<>();
+
+        private MatchNode failure;
     }
 }

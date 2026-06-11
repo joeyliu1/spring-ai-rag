@@ -7,6 +7,7 @@ import com.lss.springairag.common.BaseResponse;
 import com.lss.springairag.common.ResultUtils;
 import com.lss.springairag.entity.SensitiveWord;
 import com.lss.springairag.pojo.vo.SensitiveWordVO;
+import com.lss.springairag.service.SensitiveAuditService;
 import com.lss.springairag.service.SensitiveCategoryService;
 import com.lss.springairag.service.SensitiveWordService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -31,6 +32,9 @@ public class SensitiveWordController {
     @Autowired
     private SensitiveCategoryService sensitiveCategoryService;
 
+    @Autowired
+    private SensitiveAuditService sensitiveAuditService;
+
     @Operation(summary = "新增敏感词")
     @PostMapping("/add")
     public BaseResponse addSensitiveWord(@RequestBody SensitiveWord sensitiveWord) {
@@ -46,6 +50,7 @@ public class SensitiveWordController {
         sensitiveWord.setUpdatedAt(LocalDate.now().toString());
         boolean save = sensitiveWordService.save(sensitiveWord);
         if (save){
+            sensitiveAuditService.refreshMatcher();
             return ResultUtils.success(true);
         }
         return ResultUtils.error("新增失败");
@@ -54,7 +59,11 @@ public class SensitiveWordController {
     @Operation(summary = "删除敏感词")
     @DeleteMapping("/{id}")
     public boolean deleteSensitiveWord(@PathVariable Long id) {
-        return sensitiveWordService.removeById(id);
+        boolean removed = sensitiveWordService.removeById(id);
+        if (removed) {
+            sensitiveAuditService.refreshMatcher();
+        }
+        return removed;
     }
 
     @Operation(summary = "批量删除敏感词")
@@ -62,6 +71,7 @@ public class SensitiveWordController {
     public BaseResponse deleteSensitiveWords(@RequestBody List<Long> ids) {
         boolean b = sensitiveWordService.removeByIds(ids);
         if (b){
+            sensitiveAuditService.refreshMatcher();
             return ResultUtils.success("删除成功");
         }
         return ResultUtils.error("删除失败");
@@ -70,7 +80,11 @@ public class SensitiveWordController {
     @Operation(summary = "更新敏感词")
     @PutMapping
     public boolean updateSensitiveWord(@RequestBody SensitiveWord sensitiveWord) {
-        return sensitiveWordService.updateById(sensitiveWord);
+        boolean updated = sensitiveWordService.updateById(sensitiveWord);
+        if (updated) {
+            sensitiveAuditService.refreshMatcher();
+        }
+        return updated;
     }
 
     @Operation(summary = "分页查询敏感词")
