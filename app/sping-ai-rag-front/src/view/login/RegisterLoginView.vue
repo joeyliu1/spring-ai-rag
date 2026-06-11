@@ -41,31 +41,152 @@
       </el-form-item>
     </el-form>
 
-    <div v-else class="welcome-container">
-      <div class="welcome-content">
-        <h1 class="welcome-title">欢迎使用</h1>
-        <p class="welcome-subtitle">基于 RAG 技术的个人知识库 AI 问答系统</p>
-      </div>
-      <div class="user-profile">
-        <el-dropdown @command="handleCommand" trigger="click">
-          <el-avatar :size="50" :src="avatarUrl" @error="() => true" class="user-avatar">
-            {{ userInfo.userName?.charAt(0)?.toUpperCase() }}
-          </el-avatar>
-          <template #dropdown>
-            <el-dropdown-menu>
-              <el-dropdown-item command="profile">
-                <el-icon><User /></el-icon> 个人信息
-              </el-dropdown-item>
-              <el-dropdown-item command="password">
-                <el-icon><Lock /></el-icon> 修改密码
-              </el-dropdown-item>
-              <el-dropdown-item command="logout" divided>
-                <el-icon><SwitchButton /></el-icon> 退出登录
-              </el-dropdown-item>
-            </el-dropdown-menu>
-          </template>
-        </el-dropdown>
-      </div>
+    <div v-else class="profile-workbench" v-loading="isLoading">
+      <section class="profile-main">
+        <div class="profile-hero">
+          <div class="identity-block">
+            <el-avatar :size="84" :src="avatarUrl" @error="() => true" class="profile-avatar">
+              {{ userInitial }}
+            </el-avatar>
+            <div class="identity-copy">
+              <p class="eyebrow">个人中心</p>
+              <h1>{{ displayName }}</h1>
+              <p>{{ userInfo.userName || '未设置用户名' }} · {{ maskedPhone }}</p>
+              <div class="identity-tags">
+                <span class="role-badge" :class="roleClass">{{ roleLabel }}</span>
+                <span class="status-badge">{{ statusLabel }}</span>
+              </div>
+            </div>
+          </div>
+          <div class="hero-actions">
+            <el-button type="primary" size="large" @click="openEditProfile">
+              <el-icon><Edit /></el-icon>
+              编辑资料
+            </el-button>
+            <el-button size="large" @click="showPasswordDialog">
+              <el-icon><Lock /></el-icon>
+              修改密码
+            </el-button>
+            <el-button size="large" @click="logout">
+              <el-icon><SwitchButton /></el-icon>
+              退出登录
+            </el-button>
+          </div>
+        </div>
+
+        <div class="summary-grid">
+          <div class="summary-card">
+            <span>当前角色</span>
+            <strong>{{ roleLabel }}</strong>
+          </div>
+          <div class="summary-card">
+            <span>账号状态</span>
+            <strong>{{ statusLabel }}</strong>
+          </div>
+          <div class="summary-card">
+            <span>资料完整度</span>
+            <strong>{{ profileCompletion }}%</strong>
+          </div>
+          <div class="summary-card">
+            <span>最近更新</span>
+            <strong>{{ displayUpdateTime }}</strong>
+          </div>
+        </div>
+
+        <section class="profile-section">
+          <div class="section-head">
+            <div>
+              <h2>账号资料</h2>
+              <p>基础信息集中展示，修改入口放在首屏。</p>
+            </div>
+            <el-button text type="primary" @click="openProfileDetail">查看详情</el-button>
+          </div>
+          <div class="info-grid">
+            <div class="info-card">
+              <span>姓名</span>
+              <strong>{{ userInfo.name || '-' }}</strong>
+            </div>
+            <div class="info-card">
+              <span>用户名</span>
+              <strong>{{ userInfo.userName || '-' }}</strong>
+            </div>
+            <div class="info-card">
+              <span>手机号</span>
+              <strong>{{ maskedPhone }}</strong>
+            </div>
+            <div class="info-card">
+              <span>性别</span>
+              <strong>{{ userInfo.sex || '-' }}</strong>
+            </div>
+            <div class="info-card">
+              <span>身份证号</span>
+              <strong>{{ maskedIdNumber }}</strong>
+            </div>
+            <div class="info-card">
+              <span>创建时间</span>
+              <strong>{{ displayCreateTime }}</strong>
+            </div>
+          </div>
+        </section>
+      </section>
+
+      <aside class="profile-rail">
+        <section class="rail-card">
+          <div class="rail-title">
+            <h3>快捷入口</h3>
+            <span>常用功能</span>
+          </div>
+          <button class="quick-action" @click="goTo('/know-hub')">
+            <span class="quick-icon blue"><el-icon><Collection /></el-icon></span>
+            <span>
+              <strong>我的知识库</strong>
+              <small>管理文件、分块和索引</small>
+            </span>
+            <el-icon><ArrowRight /></el-icon>
+          </button>
+          <button class="quick-action" @click="goTo('/ragChat')">
+            <span class="quick-icon purple"><el-icon><ChatDotRound /></el-icon></span>
+            <span>
+              <strong>AI 问答</strong>
+              <small>基于知识库开始问答</small>
+            </span>
+            <el-icon><ArrowRight /></el-icon>
+          </button>
+          <button class="quick-action" @click="goTo('/draw')">
+            <span class="quick-icon orange"><el-icon><PictureRounded /></el-icon></span>
+            <span>
+              <strong>AI 绘画</strong>
+              <small>生成图片与查看结果</small>
+            </span>
+            <el-icon><ArrowRight /></el-icon>
+          </button>
+        </section>
+
+        <section class="rail-card">
+          <div class="rail-title">
+            <h3>账号安全</h3>
+            <span>当前状态</span>
+          </div>
+          <div class="status-list">
+            <div class="status-item">
+              <span>登录状态</span>
+              <strong>已登录</strong>
+            </div>
+            <div class="status-item">
+              <span>权限级别</span>
+              <strong>{{ roleLabel }}</strong>
+            </div>
+            <div class="status-item">
+              <span>密码</span>
+              <strong>可修改</strong>
+            </div>
+            <div class="status-item">
+              <span>资料完整度</span>
+              <strong>{{ profileCompletion }}%</strong>
+            </div>
+          </div>
+        </section>
+      </aside>
     </div>
 
     <!-- 个人信息对话框 -->
@@ -234,9 +355,23 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 import {ElMessage, FormInstance, FormRules} from 'element-plus'
-import { User, Lock, Avatar, Iphone, Male, Document, Timer, SwitchButton } from '@element-plus/icons-vue'
+import {
+  User,
+  Lock,
+  Avatar,
+  Iphone,
+  Male,
+  Document,
+  Timer,
+  SwitchButton,
+  Edit,
+  Collection,
+  ChatDotRound,
+  PictureRounded,
+  ArrowRight
+} from '@element-plus/icons-vue'
 import router from '@/router'
 import { BASE_URL } from '@/http/config'
 import { updatePasswordApi } from '@/api/UserApi'
@@ -308,6 +443,51 @@ const passwordForm = ref({
   oldPassword: '',
   newPassword: '',
   confirmPassword: ''
+})
+
+const displayName = computed(() => userInfo.value.name || userInfo.value.userName || '当前用户')
+
+const userInitial = computed(() => {
+  const source = displayName.value || userInfo.value.userName || 'U'
+  return source.trim().charAt(0).toUpperCase()
+})
+
+const roleLabel = computed(() => normalizeRole(userInfo.value.role, userInfo.value.userName) === 'admin' ? '管理员账号' : '普通用户')
+const roleClass = computed(() => normalizeRole(userInfo.value.role, userInfo.value.userName) === 'admin' ? 'admin' : 'user')
+const statusLabel = computed(() => userInfo.value.status === 1 ? '启用' : '停用')
+
+const maskPhone = (phone?: string) => {
+  if (!phone) return '-'
+  return phone.length >= 7 ? `${phone.slice(0, 3)}****${phone.slice(-4)}` : phone
+}
+
+const maskIdNumber = (idNumber?: string) => {
+  if (!idNumber) return '-'
+  return idNumber.length >= 8 ? `${idNumber.slice(0, 4)}********${idNumber.slice(-4)}` : idNumber
+}
+
+const formatDate = (value?: string) => {
+  if (!value) return '-'
+  return value.replace('T', ' ').slice(0, 16)
+}
+
+const maskedPhone = computed(() => maskPhone(userInfo.value.phone))
+const maskedIdNumber = computed(() => maskIdNumber(userInfo.value.idNumber))
+const displayCreateTime = computed(() => formatDate(userInfo.value.createTime))
+const displayUpdateTime = computed(() => formatDate(userInfo.value.updateTime || userInfo.value.createTime))
+
+const profileCompletion = computed(() => {
+  const fields = [
+    userInfo.value.name,
+    userInfo.value.userName,
+    userInfo.value.phone,
+    userInfo.value.sex,
+    userInfo.value.idNumber,
+    userInfo.value.role,
+    userInfo.value.createTime
+  ]
+  const completed = fields.filter(Boolean).length
+  return Math.round((completed / fields.length) * 100)
 })
 
 const normalizeRole = (role?: string, userName?: string) => {
@@ -385,16 +565,14 @@ const resetLoginState = () => {
   }
 }
 
-const handleCommand = (command: string) => {
-  if (command === 'profile') {
-    profileDialogVisible.value = true
-  } else if (command === 'password') {
-    showPasswordDialog()
-  } else if (command === 'logout') {
-    resetLoginState()
-    router.push('/login')
-    ElMessage({ message: '已成功退出登录', type: 'success' })
-  }
+const logout = () => {
+  resetLoginState()
+  router.push('/login')
+  ElMessage({ message: '已成功退出登录', type: 'success' })
+}
+
+const goTo = (path: string) => {
+  router.push(path)
 }
 
 const handleLogin = async () => {
@@ -471,6 +649,16 @@ const startEdit = () => {
     idNumber: userInfo.value.idNumber
   }
   isEditing.value = true
+}
+
+const openEditProfile = () => {
+  profileDialogVisible.value = true
+  startEdit()
+}
+
+const openProfileDetail = () => {
+  isEditing.value = false
+  profileDialogVisible.value = true
 }
 
 const cancelEdit = () => {
@@ -581,24 +769,27 @@ onMounted(() => {
 <style scoped lang="less">
 .login-container {
   width: 100%;
-  height: 100vh;
+  min-height: 100%;
+  height: auto;
   display: flex;
   justify-content: center;
   align-items: center;
   background: linear-gradient(135deg, #f0f0f5 0%, #fafafa 50%, #f5f5f7 100%);
   position: relative;
-  overflow: hidden;
+  overflow: visible;
+  border-radius: 18px;
 
   &::before {
     content: '';
     position: absolute;
-    top: -50%;
-    left: -50%;
-    width: 200%;
-    height: 200%;
+    inset: 0;
+    width: 100%;
+    height: 100%;
     background: radial-gradient(circle at 30% 30%, rgba(0, 122, 255, 0.05) 0%, transparent 50%),
               radial-gradient(circle at 70% 70%, rgba(175, 82, 222, 0.05) 0%, transparent 50%);
     animation: float 20s ease-in-out infinite;
+    border-radius: inherit;
+    pointer-events: none;
   }
 }
 
@@ -712,63 +903,356 @@ onMounted(() => {
   }
 }
 
-.welcome-container {
-  text-align: center;
-  width: 100%;
+.profile-workbench {
   position: relative;
   z-index: 1;
-  animation: fadeIn 0.6s ease-out;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 18px;
+  width: 100%;
+  min-height: 100%;
+  padding: 0;
+  animation: slideUp 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+.profile-main {
+  display: grid;
+  grid-template-rows: auto auto 1fr;
+  gap: 18px;
+  min-width: 0;
 }
 
-.welcome-content {
-  margin-bottom: 60px;
-}
-
-.welcome-title {
-  font-size: 48px;
-  font-weight: 700;
-  background: linear-gradient(135deg, var(--apple-blue) 0%, var(--apple-purple) 50%, var(--apple-indigo) 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  margin-bottom: 16px;
-  animation: gradientShift 5s ease infinite;
-  background-size: 200% 200%;
-}
-
-@keyframes gradientShift {
-  0%, 100% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-}
-
-.welcome-subtitle {
-  font-size: 20px;
-  color: var(--apple-text-secondary);
-  font-weight: 400;
-}
-
-.user-profile {
-  position: fixed;
-  top: 24px;
-  right: 24px;
-  cursor: pointer;
-  z-index: 1000;
-}
-
-.user-avatar {
-  border: 3px solid rgba(255, 255, 255, 0.8);
+.profile-hero,
+.profile-section,
+.rail-card,
+.summary-card,
+.info-card {
+  border: 1px solid var(--apple-border);
+  background: rgba(255, 255, 255, 0.78);
+  backdrop-filter: blur(22px);
+  -webkit-backdrop-filter: blur(22px);
   box-shadow: var(--shadow-md);
-  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.profile-hero {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 24px;
+  min-height: 220px;
+  padding: 28px;
+  overflow: hidden;
+  border-radius: 24px;
+  background:
+    linear-gradient(135deg, rgba(0, 122, 255, 0.11), rgba(175, 82, 222, 0.07)),
+    rgba(255, 255, 255, 0.82);
+
+  &::after {
+    content: '';
+    position: absolute;
+    right: -96px;
+    bottom: -150px;
+    width: 360px;
+    height: 360px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(0, 122, 255, 0.18), transparent 64%);
+    pointer-events: none;
+  }
+}
+
+.identity-block {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  min-width: 0;
+}
+
+.profile-avatar {
+  flex: 0 0 auto;
+  border: 4px solid rgba(255, 255, 255, 0.78);
+  border-radius: 28px;
   background: linear-gradient(135deg, var(--apple-blue) 0%, var(--apple-indigo) 100%);
+  box-shadow: 0 18px 42px rgba(0, 122, 255, 0.28);
+  color: #fff;
+  font-size: 28px;
+  font-weight: 800;
+}
+
+.identity-copy {
+  min-width: 0;
+
+  .eyebrow {
+    margin: 0 0 8px;
+    color: var(--apple-blue);
+    font-size: 13px;
+    font-weight: 700;
+  }
+
+  h1 {
+    margin: 0;
+    color: var(--apple-text-primary);
+    font-size: clamp(30px, 4vw, 42px);
+    line-height: 1.08;
+    letter-spacing: 0;
+    word-break: break-word;
+  }
+
+  p {
+    margin: 10px 0 0;
+    color: var(--apple-text-secondary);
+    font-size: 15px;
+  }
+}
+
+.identity-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.role-badge,
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  height: 30px;
+  padding: 0 12px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.role-badge.admin {
+  color: #fff;
+  background: linear-gradient(135deg, #30d158, #64d26e);
+}
+
+.role-badge.user {
+  color: var(--apple-blue);
+  background: rgba(0, 122, 255, 0.1);
+}
+
+.status-badge {
+  color: #248a3d;
+  background: rgba(48, 209, 88, 0.14);
+}
+
+.hero-actions {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 10px;
+
+  .el-button {
+    height: 42px;
+    margin-left: 0;
+    border-radius: var(--radius-md);
+    font-weight: 700;
+  }
+
+  .el-button--primary {
+    border: none;
+    background: linear-gradient(135deg, var(--apple-blue) 0%, var(--apple-indigo) 100%);
+    box-shadow: 0 12px 26px rgba(0, 122, 255, 0.24);
+  }
+}
+
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.summary-card {
+  min-height: 108px;
+  padding: 18px;
+  border-radius: 18px;
+
+  span {
+    display: block;
+    margin-bottom: 10px;
+    color: var(--apple-text-secondary);
+    font-size: 13px;
+  }
+
+  strong {
+    display: block;
+    color: var(--apple-text-primary);
+    font-size: 24px;
+    line-height: 1.2;
+    word-break: break-word;
+  }
+}
+
+.profile-section {
+  min-height: 300px;
+  padding: 20px;
+  border-radius: 22px;
+}
+
+.section-head,
+.rail-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 16px;
+
+  h2,
+  h3 {
+    margin: 0;
+    color: var(--apple-text-primary);
+    font-weight: 700;
+    letter-spacing: 0;
+  }
+
+  h2 {
+    font-size: 22px;
+  }
+
+  h3 {
+    font-size: 17px;
+  }
+
+  p,
+  span {
+    margin: 6px 0 0;
+    color: var(--apple-text-secondary);
+    font-size: 13px;
+  }
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.info-card {
+  min-height: 86px;
+  padding: 16px;
+  border-radius: 16px;
+
+  span {
+    display: block;
+    margin-bottom: 8px;
+    color: var(--apple-text-secondary);
+    font-size: 13px;
+  }
+
+  strong {
+    display: block;
+    color: var(--apple-text-primary);
+    font-size: 16px;
+    line-height: 1.45;
+    word-break: break-all;
+  }
+}
+
+.profile-rail {
+  display: grid;
+  align-content: start;
+  gap: 18px;
+  min-width: 0;
+}
+
+.rail-card {
+  padding: 18px;
+  border-radius: 22px;
+}
+
+.quick-action {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) 18px;
+  align-items: center;
+  gap: 12px;
+  min-height: 66px;
+  margin-top: 10px;
+  padding: 12px;
+  border: 1px solid var(--apple-border);
+  border-radius: 16px;
+  color: var(--apple-text-primary);
+  background: rgba(255, 255, 255, 0.72);
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s ease;
 
   &:hover {
-    transform: scale(1.08);
-    box-shadow: var(--shadow-lg);
+    transform: translateY(-1px);
+    border-color: rgba(0, 122, 255, 0.22);
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.07);
+  }
+
+  strong {
+    display: block;
+    font-size: 14px;
+  }
+
+  small {
+    display: block;
+    margin-top: 4px;
+    color: var(--apple-text-secondary);
+    font-size: 12px;
+    line-height: 1.4;
+  }
+
+  > .el-icon {
+    color: var(--apple-text-secondary);
+  }
+}
+
+.quick-icon {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
+  color: #fff;
+  font-size: 20px;
+
+  &.blue {
+    background: linear-gradient(135deg, #007aff, #5856d6);
+  }
+
+  &.purple {
+    background: linear-gradient(135deg, #af52de, #5856d6);
+  }
+
+  &.orange {
+    background: linear-gradient(135deg, #ff9f0a, #ffcc00);
+  }
+}
+
+.status-list {
+  display: grid;
+  gap: 2px;
+}
+
+.status-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--apple-border);
+
+  &:last-child {
+    border-bottom: 0;
+  }
+
+  span {
+    color: var(--apple-text-secondary);
+    font-size: 13px;
+  }
+
+  strong {
+    color: var(--apple-text-primary);
+    font-size: 13px;
   }
 }
 
@@ -878,5 +1362,73 @@ onMounted(() => {
   gap: 8px;
   padding: 10px 16px;
   border-radius: var(--radius-sm);
+}
+
+@media (max-width: 1280px) {
+  .profile-workbench {
+    grid-template-columns: 1fr;
+    min-height: auto;
+  }
+
+  .profile-rail {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 980px) {
+  .login-container {
+    height: auto;
+    min-height: 100vh;
+    align-items: flex-start;
+  }
+
+  .profile-workbench {
+    padding: 16px;
+  }
+
+  .profile-hero {
+    flex-direction: column;
+  }
+
+  .hero-actions {
+    justify-content: flex-start;
+  }
+
+  .summary-grid,
+  .info-grid,
+  .profile-rail {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .login-form {
+    width: min(360px, calc(100vw - 32px));
+    margin-left: 0;
+  }
+
+  .profile-workbench {
+    padding: 12px;
+  }
+
+  .identity-block {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .profile-hero,
+  .profile-section,
+  .rail-card {
+    border-radius: 18px;
+    padding: 16px;
+  }
+
+  .hero-actions {
+    width: 100%;
+
+    .el-button {
+      width: 100%;
+    }
+  }
 }
 </style>
