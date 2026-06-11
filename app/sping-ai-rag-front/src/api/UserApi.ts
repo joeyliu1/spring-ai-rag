@@ -35,7 +35,7 @@ interface UpdateUserDto {
 
 // 修改密码请求参数接口
 export interface UpdatePasswordDto {
-  id: number;
+  id?: number;
   oldPassword: string;
   newPassword: string;
   confirmPassword: string;

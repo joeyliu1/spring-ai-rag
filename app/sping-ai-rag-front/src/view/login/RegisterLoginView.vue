@@ -578,8 +578,15 @@ const goTo = (path: string) => {
 const handleLogin = async () => {
   try {
     isLoading.value = true
-    const response = await fetch(BASE_URL+`/user/login?userName=${loginForm.value.userName}&password=${loginForm.value.password}`, {
+    const response = await fetch(BASE_URL + '/user/login', {
       method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        userName: loginForm.value.userName,
+        password: loginForm.value.password,
+      }),
     })
     const data = await response.json()
     if (data.code === 0) {
@@ -696,15 +703,15 @@ const handleUpdate = async () => {
 const passwordRules: FormRules = {
   oldPassword: [
     { required: true, message: '请输入原密码', trigger: 'blur' },
-    { min: 5, max: 20, message: '密码长度在 5 到 20 个字符', trigger: 'blur' }
+    { min: 6, max: 64, message: '密码长度在 6 到 64 个字符', trigger: 'blur' }
   ],
   newPassword: [
     { required: true, message: '请输入新密码', trigger: 'blur' },
-    { min: 5, max: 20, message: '密码长度在 5 到 20 个字符', trigger: 'blur' }
+    { min: 6, max: 64, message: '密码长度在 6 到 64 个字符', trigger: 'blur' }
   ],
   confirmPassword: [
     { required: true, message: '请再次输入新密码', trigger: 'blur' },
-    { min: 5, max: 20, message: '密码长度在 5 到 20 个字符', trigger: 'blur' },
+    { min: 6, max: 64, message: '密码长度在 6 到 64 个字符', trigger: 'blur' },
     {
       validator: (_rule, value, callback) => {
         if (value !== passwordForm.value.newPassword) {

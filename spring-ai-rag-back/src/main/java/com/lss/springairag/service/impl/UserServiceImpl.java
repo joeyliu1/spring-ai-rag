@@ -16,10 +16,10 @@ import com.lss.springairag.mapper.UserMapper;
 import com.lss.springairag.pojo.dto.UserDTO;
 import com.lss.springairag.pojo.dto.UserPageQueryDTO;
 import com.lss.springairag.service.UserService;
+import com.lss.springairag.utils.PasswordUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.util.DigestUtils;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -44,12 +44,13 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
             throw new AccountNotFoundException(MessageConstant.ACCOUNT_NOT_FOUND);
         }
 
-        //密码比对
-        //对前端传过来的明文密码进行md5加密处理
-        password = DigestUtils.md5DigestAsHex(password.getBytes());
-        if (!password.equals(user.getPassword())) {
+        if (!PasswordUtils.matches(password, user.getPassword())) {
             //密码错误
             throw new PasswordErrorException(MessageConstant.PASSWORD_ERROR);
+        }
+        if (PasswordUtils.needsUpgrade(user.getPassword())) {
+            user.setPassword(PasswordUtils.encode(password));
+            userMapper.updateById(user);
         }
 
         if (user.getStatus() == StatusConstant.DISABLE) {
@@ -73,7 +74,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         user.setRole(normalizeRole(user.getRole(), "user"));
 
         //设置密码，默认密码123456
-        user.setPassword(DigestUtils.md5DigestAsHex(PasswordConstant.DEFAULT_PASSWORD.getBytes()));
+        user.setPassword(PasswordUtils.encode(PasswordConstant.DEFAULT_PASSWORD));
 
         //设置当前记录的创建时间和修改时间
         user.setCreateTime(LocalDate.now());
@@ -129,8 +130,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         //设置账号的状态，默认正常状态 1表示正常 0表示锁定
         userResult.setStatus(StatusConstant.ENABLE);
         userResult.setRole("user");
-        //设置密码，默认密码123456
-        userResult.setPassword(DigestUtils.md5DigestAsHex(PasswordConstant.DEFAULT_PASSWORD.getBytes()));
+        userResult.setPassword(PasswordUtils.encode(user.getPassword()));
 
         //设置当前记录的创建时间和修改时间
         userResult.setCreateTime(LocalDate.now());
@@ -157,7 +157,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         return defaultRole == null ? "user" : defaultRole;
     }
 }
-
 
 
 

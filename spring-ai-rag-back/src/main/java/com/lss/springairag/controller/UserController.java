@@ -9,20 +9,20 @@ import com.lss.springairag.constant.JwtClaimsConstant;
 import com.lss.springairag.context.BaseContext;
 import com.lss.springairag.entity.User;
 import com.lss.springairag.pojo.dto.PasswordDTO;
+import com.lss.springairag.pojo.dto.UserLoginDTO;
 import com.lss.springairag.pojo.dto.UserDTO;
 import com.lss.springairag.pojo.dto.UserPageQueryDTO;
 import com.lss.springairag.pojo.vo.UserLoginVO;
 import com.lss.springairag.service.UserService;
 import com.lss.springairag.utils.JwtUtil;
+import com.lss.springairag.utils.PasswordUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.util.DigestUtils;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
-import javax.security.auth.login.AccountLockedException;
-import javax.security.auth.login.AccountNotFoundException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -45,16 +45,28 @@ public class UserController {
     @PostMapping("/updatePassword")
     @Operation(summary = "updatePassword", description = "修改密码")
     public BaseResponse updatePassword(@RequestBody PasswordDTO passwordDTO) {
-        log.info("修改密码：{}", passwordDTO.toString());
+        Long currentUserId = BaseContext.getCurrentId();
+        log.info("修改密码，userId：{}", currentUserId);
+        if (passwordDTO == null
+                || !StringUtils.hasText(passwordDTO.getOldPassword())
+                || !StringUtils.hasText(passwordDTO.getNewPassword())
+                || !StringUtils.hasText(passwordDTO.getConfirmPassword())) {
+            return ResultUtils.error("密码参数不能为空");
+        }
         if (!passwordDTO.getNewPassword().equals(passwordDTO.getConfirmPassword())) {
             return ResultUtils.error("新密码与确认密码不一致");
         }
-        User user = userService.getById(passwordDTO.getId());
-        String s = DigestUtils.md5DigestAsHex(passwordDTO.getOldPassword().getBytes());
-        if (!user.getPassword().equals(s)) {
+        if (passwordDTO.getNewPassword().length() < 6 || passwordDTO.getNewPassword().length() > 64) {
+            return ResultUtils.error("密码长度需在 6 到 64 个字符之间");
+        }
+        User user = userService.getById(currentUserId);
+        if (user == null) {
+            return ResultUtils.error("当前登录用户不存在，请重新登录");
+        }
+        if (!PasswordUtils.matches(passwordDTO.getOldPassword(), user.getPassword())) {
             return ResultUtils.error("旧密码错误");
         }
-        user.setPassword(DigestUtils.md5DigestAsHex(passwordDTO.getNewPassword().getBytes()));
+        user.setPassword(PasswordUtils.encode(passwordDTO.getNewPassword()));
         userService.updateById(user);
         return ResultUtils.success("修改密码成功");
     }
@@ -66,8 +78,14 @@ public class UserController {
     @PostMapping("/register")
     @Operation(summary = "register", description = "注册")
     public BaseResponse register(@RequestBody User user) {
-        log.info("注册：{}", user.toString());
+        log.info("注册用户：{}", user == null ? null : user.getUserName());
 
+        if (user == null || !StringUtils.hasText(user.getUserName()) || !StringUtils.hasText(user.getPassword())) {
+            return ResultUtils.error("用户名和密码不能为空");
+        }
+        if (user.getPassword().length() < 6 || user.getPassword().length() > 64) {
+            return ResultUtils.error("密码长度需在 6 到 64 个字符之间");
+        }
         if (userService.getByUsername(user.getUserName())) {
             return ResultUtils.error("用户名已存在");
         } else {
@@ -85,11 +103,13 @@ public class UserController {
      */
     @PostMapping("/login")
     @Operation(summary = "login", description = "登录")
-    public BaseResponse login(@RequestParam(value = "userName", defaultValue = "admin") String userName,
-                              @RequestParam(value = "password", defaultValue = "123456") String password) throws AccountLockedException, AccountNotFoundException {
-        log.info("登录：{}", userName + ":" + password);
+    public BaseResponse login(@RequestBody UserLoginDTO loginDTO) {
+        if (loginDTO == null || !StringUtils.hasText(loginDTO.getUserName()) || !StringUtils.hasText(loginDTO.getPassword())) {
+            return ResultUtils.error("用户名和密码不能为空");
+        }
+        log.info("登录用户：{}", loginDTO.getUserName());
 
-        User user = userService.login(userName, password);
+        User user = userService.login(loginDTO.getUserName(), loginDTO.getPassword());
 
         //登录成功后，生成jwt令牌
         Map<String, Object> claims = new HashMap<>();

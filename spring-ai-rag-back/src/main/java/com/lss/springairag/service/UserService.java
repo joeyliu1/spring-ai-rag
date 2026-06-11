@@ -6,12 +6,9 @@ import com.lss.springairag.entity.User;
 import com.lss.springairag.pojo.dto.UserDTO;
 import com.lss.springairag.pojo.dto.UserPageQueryDTO;
 
-import javax.security.auth.login.AccountLockedException;
-import javax.security.auth.login.AccountNotFoundException;
-
 public interface UserService extends IService<User> {
 
-    User login(String userName, String password) throws AccountNotFoundException, AccountLockedException;
+    User login(String userName, String password);
 
     void saveUser(UserDTO userDTO);
 
