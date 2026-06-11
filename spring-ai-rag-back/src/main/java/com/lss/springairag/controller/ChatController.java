@@ -20,11 +20,16 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Flux;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
+
 @Tag(name = "AiRagController", description = "chat对话接口")
 @Slf4j
 @RestController
 @RequestMapping(ApplicationConstant.API_VERSION + "/chat")
 public class ChatController {
+
+    private static final int STREAM_AUDIT_BUFFER_SIZE = 80;
 
     @Autowired
     private ChatClient chatClient;
@@ -71,14 +76,50 @@ public class ChatController {
     }
 
     private Flux<String> auditOutput(Flux<String> content) {
-        return content.collectList()
-                .flatMapMany(chunks -> {
-                    String response = String.join("", chunks);
-                    SensitiveAuditResult outputAudit = sensitiveAuditService.auditOutput(response, "chat");
-                    if (outputAudit.isBlocked()) {
-                        return Flux.just(outputAudit.getBlockMessage());
-                    }
-                    return Flux.just(response);
-                });
+        AtomicReference<String> buffer = new AtomicReference<>("");
+        AtomicBoolean blocked = new AtomicBoolean(false);
+        return content.<String>handle((chunk, sink) -> {
+            if (blocked.get()) {
+                sink.complete();
+                return;
+            }
+            String nextBuffer = buffer.get() + chunk;
+            if (!shouldFlushAuditBuffer(nextBuffer)) {
+                buffer.set(nextBuffer);
+                return;
+            }
+            SensitiveAuditResult outputAudit = sensitiveAuditService.auditOutput(nextBuffer, "chat");
+            if (outputAudit.isBlocked()) {
+                blocked.set(true);
+                buffer.set("");
+                sink.next(outputAudit.getBlockMessage());
+                sink.complete();
+                return;
+            }
+            buffer.set("");
+            sink.next(nextBuffer);
+        }).concatWith(Flux.defer(() -> {
+            String remaining = buffer.getAndSet("");
+            if (blocked.get() || remaining.isEmpty()) {
+                return Flux.empty();
+            }
+            SensitiveAuditResult outputAudit = sensitiveAuditService.auditOutput(remaining, "chat");
+            if (outputAudit.isBlocked()) {
+                blocked.set(true);
+                return Flux.just(outputAudit.getBlockMessage());
+            }
+            return Flux.just(remaining);
+        }));
+    }
+
+    private boolean shouldFlushAuditBuffer(String buffer) {
+        return buffer.length() >= STREAM_AUDIT_BUFFER_SIZE
+                || buffer.endsWith("\n")
+                || buffer.endsWith("。")
+                || buffer.endsWith("！")
+                || buffer.endsWith("？")
+                || buffer.endsWith(".")
+                || buffer.endsWith("!")
+                || buffer.endsWith("?");
     }
 }

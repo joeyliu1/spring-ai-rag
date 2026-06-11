@@ -70,6 +70,29 @@
           <div v-else class="selected-files-empty">
             先选文件，再发送问题。
           </div>
+
+          <div class="retrieval-options">
+            <label>
+              <span>TopK</span>
+              <el-input-number v-model="ragTopK" :min="1" :max="20" size="small" controls-position="right" />
+            </label>
+            <label>
+              <span>阈值</span>
+              <el-input-number
+                v-model="ragSimilarityThreshold"
+                :min="0"
+                :max="1"
+                :step="0.05"
+                :precision="2"
+                size="small"
+                controls-position="right"
+              />
+            </label>
+            <label class="rerank-option">
+              <span>Rerank</span>
+              <el-switch v-model="ragRerank" size="small" />
+            </label>
+          </div>
         </div>
 
         <div class="chat-messages" ref="messageContainer">
@@ -166,6 +189,9 @@ const isLoading = ref(false)
 const messageContainer = ref<HTMLElement | null>(null)
 const knowledgeFiles = ref<StoreFile[]>([])
 const selectedFiles = ref<number[]>([])
+const ragTopK = ref(5)
+const ragSimilarityThreshold = ref(0.1)
+const ragRerank = ref(true)
 const STREAM_FLUSH_INTERVAL = 80
 
 const createMessage = (role: ChatMessage['role'], content: string, isTyping = false): ChatMessage => ({
@@ -299,7 +325,11 @@ const sendMessage = async (url: string, selectedFileIds: number[] = []) => {
   }).filter(name => name !== '')
 
   if (fileSources.length > 0) {
-    getStreamChat(currentInput, url, handleStreamMessage, handleStreamError, handleStreamClose, fileSources)
+    getStreamChat(currentInput, url, handleStreamMessage, handleStreamError, handleStreamClose, fileSources, {
+      topK: ragTopK.value,
+      similarityThreshold: ragSimilarityThreshold.value,
+      rerank: ragRerank.value,
+    })
   } else {
     getStreamChat(currentInput, url, handleStreamMessage, handleStreamError, handleStreamClose)
   }
@@ -576,6 +606,30 @@ onMounted(() => {
   margin-top: 10px;
   color: var(--apple-text-secondary);
   font-size: 12px;
+}
+
+.retrieval-options {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+
+  label {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--apple-text-secondary);
+    font-size: 12px;
+  }
+
+  :deep(.el-input-number) {
+    width: 92px;
+  }
+}
+
+.rerank-option {
+  min-height: 24px;
 }
 
 .chat-messages {

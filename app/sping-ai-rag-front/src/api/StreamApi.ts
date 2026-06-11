@@ -4,6 +4,12 @@ import service from "@/http";
 
 type ResultCallBack = (e: any | null) => void;
 
+export interface RagStreamOptions {
+    topK?: number;
+    similarityThreshold?: number;
+    rerank?: boolean;
+}
+
 const BaseUrl = BASE_URL;
 export const postStreamChat = (
     author: string,
@@ -58,7 +64,8 @@ export const getStreamChat = (
     onMessage: ResultCallBack,
     onError: ResultCallBack,
     onClose: ResultCallBack,
-    sources?: string[]
+    sources?: string[],
+    options?: RagStreamOptions
 ) => {
     const ctrl = new AbortController();
     
@@ -69,6 +76,15 @@ export const getStreamChat = (
         sources.forEach(source => {
             formData.append('sources', source);
         });
+    }
+    if (options?.topK !== undefined) {
+        formData.append('topK', String(options.topK));
+    }
+    if (options?.similarityThreshold !== undefined) {
+        formData.append('similarityThreshold', String(options.similarityThreshold));
+    }
+    if (options?.rerank !== undefined) {
+        formData.append('rerank', String(options.rerank));
     }
     
     fetchEventSource(service.defaults.baseURL + url, {
