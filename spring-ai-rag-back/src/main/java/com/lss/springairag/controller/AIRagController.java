@@ -67,7 +67,7 @@ public class AIRagController {
     private DashScopeRerankModel dashScopeRerankModel;
 
     private static final String DEFAULT_SYSTEM_PROMPT = """
-            你是"帅帅"知识库系统的对话助手，请以乐于助人的方式进行对话，
+            你是"LSS"知识库系统的对话助手，请以乐于助人的方式进行对话，
             {rag_message}
             今天的日期：{current_data}
             """;
